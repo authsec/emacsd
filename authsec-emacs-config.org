@@ -1,0 +1,408 @@
+#+title: Authsec Emacs Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle ./initl.el :mkdirp yes
+
+* Introduction
+
+  This =.org= file contains my Emacs configuration for Emacs 27.2+. There is a pretty good guideline on [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#on-macos][the Doom Emacs project]] that tells you which dependencies to install in order to get a proper Emacs installation on your system of choice.
+
+  I am using the =emacs-mac= package from =brew=. It is installed
+  with:
+
+  #+begin_src sh
+    # required dependencies
+    brew install git ripgrep
+    # optional dependencies
+    brew install coreutils fd
+    # Installs clang
+    xcode-select --install
+  #+end_src
+
+  In order to be able to open Emacs from a Spotlight search you need to create a proper alias. A symlink won't show up in Spotlight.
+
+  You can create the proper alias with the following command:
+
+  #+begin_src sh
+    osascript -e 'tell application "Finder" to make alias file to POSIX file "/usr/local/opt/emacs-mac/Emacs.app" at POSIX file "/Applications/"'
+  #+end_src
+
+* Base Configuration
+
+  This is a minimal base configuration for Emacs. 
+
+  #+begin_src emacs-lisp
+    (setq inhibit-startup-message t) ;Don't show the start screen
+    (setq inhibit-splash-screen t)
+    (setq inhibit-startup-message t)
+    (setq initial-scratch-message "")
+
+    ;; key bindings
+    (when (eq system-type 'darwin) ;; mac specific settings
+      (setq mac-command-modifier 'meta) ; Map the command key as the Meta Key, this will give a similar feel on windoze keyboards
+      (setq mac-option-modifier 'alt) ;
+      (setq mac-right-option-modifier 'none) ; Write accents/umlauts with the right option modifier
+      (setq dired-use-ls-dired nil) ; The ls command on MacOS does not support --dired
+      )
+
+    (scroll-bar-mode -1) ; Disable the visible scrollbar
+    (tool-bar-mode -1)    ; Disable the toolbar
+    (tooltip-mode -1)    ; Disable tooltips
+    (set-fringe-mode 10) ; Give some breathing room
+
+    (menu-bar-mode -1)   ; Disable the menubar
+
+    (setq visible-bell t); Setup visible bell
+
+    ;; Setup a font
+    (set-face-attribute 'default nil :font "PragmataPro" :height 280)
+
+  #+end_src
+
+** Visual Line Mode
+
+   This mode allows long lines to be wrapped if they are too long to fit the current window. The mode can globally be enabled with =global-visual-line-mode= or =visual-line-mode= respectively:
+
+   #+begin_src emacs-lisp
+     (global-visual-line-mode t)
+   #+end_src
+   
+* Setup Package Management
+
+  Emacs can be extended with more packages. The packages can come from multiple sources, that we have to list in the =init.el= file.
+
+  #+begin_src emacs-lisp
+    ;; Initialize package source
+    (require 'package)
+
+    (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+			     ("Org" . "https://orgmode.org/elpa/")
+			     ("elpa" . "https://elpa.gnu.org/packages/")
+			     ))
+
+    (package-initialize)
+    (unless package-archive-contents (package-refresh-contents))
+
+    ;; initialize use-package
+    (unless (package-installed-p 'use-package) (package-install 'use-package))
+
+    (require 'use-package)
+    (setq use-package-always-ensure t)
+
+  #+end_src
+
+* Theming
+
+  Emacs has a few basic built in themes, but allows you to package install new themes as well. You can see a few themes on [[https://peach-melpa.org/][Peach Melpa]].
+  
+  You can setup a basic theme with (not generated into the configuration):
+
+  #+begin_src emacs-lisp :tangle no
+    (load-theme 'wombat)
+  #+end_src
+
+** Doom Themes
+
+   These themes usually come with =doom-mode= but they do some
+   additional configuration for some of the specific modes.
+
+   The =doom-themes= will not be generated into the configuration, it is just for reference and needs to be enabled by removing =:tangle no= from the src block below.
+
+   #+begin_src emacs-lisp :tangle no
+     (use-package doom-themes)
+   #+end_src
+
+** Solarized
+
+   I do like the solarized themes a lot.
+
+   #+begin_src emacs-lisp
+     (use-package solarized-theme)
+     (load-theme 'solarized-light t)
+   #+end_src
+
+** All The Icons
+
+   This provides a icons for the =doom-modeline=. They may already be installed, but just to make sure, set it up with:
+
+   #+begin_src emacs-lisp
+     (use-package all-the-icons
+       :if (display-graphic-p)
+       :commands all-the-icons-install-fonts
+       :init (unless (find-font (font-spec :name "all-the-icons"))
+	       (all-the-icons-install-fonts t)))
+     (use-package all-the-icons-dired
+       :if (display-graphic-p)
+       :hook (dired-mode . all-the-icons-dired-mode))
+
+   #+end_src
+  
+* Show Keybindings
+
+  At first you need to execute the function
+  =global-command-log-mode=. After that you can enable the command log
+  buffer with =clm/toggle-command-log-buffer= with =M-x=.
+
+  #+begin_src emacs-lisp
+    (use-package command-log-mode)
+  #+end_src
+
+* Setup a completion framework
+
+  There are =helm= and =ivy=.
+
+  We're setting up =ivy= in this example.
+
+  #+begin_src emacs-lisp
+    ;; Install sensible dependencies
+    (use-package swiper
+      :ensure t
+      )
+    (use-package counsel
+      :ensure t
+      :bind (("M-x" . counsel-M-x)
+	     ("C-x b" . counsel-ibuffer)
+	     ("C-x C-f" . counsel-find-file)
+	     :map minibuffer-local-map
+	     ("C-r" . 'counsel-minibuffer-history)
+	     )
+      )
+    (use-package ivy
+      :diminish
+      :bind (("C-s" . swiper)
+	     )
+      :config
+      (ivy-mode 1))
+  #+end_src
+
+** ivy-rich
+
+   This will give you the details of the commands when the show in a list.
+
+   #+begin_src emacs-lisp
+     (use-package ivy-rich
+       :init (ivy-rich-mode 1)
+       )
+   #+end_src
+  
+* Modeline
+
+  You can change the modeline to look a bit nicer by using the =doom-modeline= package.
+
+  You can configure it like this:
+
+  #+begin_src emacs-lisp
+    (use-package doom-modeline
+      :ensure t
+      :init (doom-modeline-mode 1)
+      :config (setq doom-modeline-height 15) ; Just set this below the fontsize to be as minimal as possible
+      )
+  #+end_src
+
+* Line Number
+
+  You can turn on line numbers like this:
+
+  #+begin_src emacs-lisp
+    ;; enable line numbering
+    (column-number-mode)
+    (global-display-line-numbers-mode t)
+
+    ;; Disable line numbers for selected modes
+    (dolist (mode '(org-mode-hook
+		    term-mode-hook
+		    eshell-mode-hook))
+      (add-hook mode (lambda () (display-line-numbers-mode 0)))
+      )
+  #+end_src
+  
+* Rainbow Delimiters
+
+  In order to better differentiate between the various brackets you can color them.
+
+  To enable for all programming modes, use the following
+  configuration, where =prog-mode=, the base mode for all programming
+  languages, is defined.
+
+  The colors of the brackets are dependent on the theme you are using.
+
+  #+begin_src emacs-lisp
+    (use-package rainbow-delimiters
+      :hook (prog-mode . rainbow-delimiters-mode))
+  #+end_src
+
+* Which Key
+
+  The which key package will show a panel popup when you start typing
+  a keybinding, so you can see which keys are available under that.
+
+  You can set up the delay until the popup should be shown with a variable.
+
+  #+begin_src emacs-lisp
+    (use-package which-key
+      :init (which-key-mode)
+      :diminish which-key-mode
+      :config
+      (setq which-key-idle-delay 0.3)
+      )
+  #+end_src
+  
+* Read-Only Buffers
+
+  You can make a buffer read-only using =C-x C-q=. This is especially good to know if you accidentally hit a key combination and you can no longer type in your buffer.
+
+* General.el
+
+  [[https://github.com/noctuid/general.el][This package]] allows you to conveniently bind keys in emacs. With this you can create a new global command prefix for your own commands.
+
+  You are tring to override an already existing keybinding if you e.g. run into an error like the one shown below. In this case you can either force general to bind the definition or fallback to the key command after a timeout. You can find more information [[https://github.com/noctuid/general.el/blob/master/README.org#how-do-i-prevent-key-sequence-starts-with-non-prefix-key-errors][on general github]]. 
+  
+  #+begin_example
+  (error "Key sequence C-SPC a starts with non-prefix key C-...")
+  #+end_example
+
+  Binding Control-Alt-Command-Space as the leader key can be done with the following setup.
+
+  #+begin_src emacs-lisp
+    (use-package general
+      :config
+      (general-create-definer authsec/leader-key
+	:prefix "A-C-M-SPC"
+	)
+      )
+
+    (authsec/leader-key
+      "a" 'org-agenda
+      "b" 'counsel-bookmark
+      )
+  #+end_src
+
+* Hydra
+
+  Hydra allow to set up transient, temporary, keybindings. An example would be to zoom in and out of text with just a single key once you have reached the "sub-menu" with the prefix key chords.
+
+  A simple text zoom example (that you can also reach by default with =C-x C-0=) can be set up like this (not rendered into configuration):
+
+  #+begin_src emacs-lisp :tangle no
+    (use-package hydra)
+    (defhydra hydra-scale-text (:timeout 4)
+      "zoom text"
+      ("j" text-scale-increase "in")
+      ("k" text-scale-decrease "out")
+      ("f" nil "finish" :exit t)
+      )
+
+    ;; Bind into my keyspace
+    (authsec/leader-key
+      "ts" '(hydra-scale-text/body :which-key "zoom text"))
+  #+end_src
+
+* Magit
+
+  This is a Emacs frontend for =git= and can be set up with:
+
+  #+begin_src emacs-lisp
+    (use-package magit
+      :commands (magit-status magit-get-current-branch)
+      :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+  #+end_src
+
+* Org Mode
+
+  Org Mode comes with Emacs, you can however get the latest version from Org ELPA.
+
+  You can make sure the new version is installed with:
+
+  - =org-ellipsis= replaces the '...' characters after a heading when it is folded with the supplied one. The symbol is coming from the =PragmataPro= font, which may not be installed on your system or the site you're viewing this on.
+  
+  #+begin_src emacs-lisp
+    (use-package org
+      :custom
+      (org-ellipsis " ⮷")
+      )
+  #+end_src
+  
+** Configure Babel Languages
+
+   To execute or export code in =org-mode= code blocks, you'll need to
+   set up =org-babel-load-languages= for each language you'd like to
+   use.  [[https://orgmode.org/worg/org-contrib/babel/languages.html][This page]] documents all of the languages that you can use with
+   =org-babel=.
+
+   #+begin_src emacs-lisp
+     (with-eval-after-load 'org
+       (org-babel-do-load-languages
+	'org-babel-load-languages
+	'((emacs-lisp . t)
+	  (python . t))
+	)
+
+       (push '("conf-unix" . conf-unix) org-src-lang-modes))
+   #+end_src
+
+*** Org Tempo
+    Using =org-tempo= will allow you to quickly create =begin_src..end_src= blocks with a shortcut syntax.
+
+    Using the below setup for example you'd type =<el= and it would render an =emacs-lisp= src block.
+
+    #+begin_src emacs-lisp
+      (require 'org-tempo)
+      (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+      (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+      (add-to-list 'org-structure-template-alist '("py" . "src python"))
+      (add-to-list 'org-structure-template-alist '("java" . "src java"))
+    #+end_src
+
+** Org-Bullets
+
+   This package customizes the leading bullets to look a bit nicer.
+
+   #+begin_src emacs-lisp
+     (use-package org-bullets
+       :after org
+       :hook (org-mode . org-bullets-mode))
+   #+end_src
+
+** Org Agenda
+
+   In order to track task and e.g. birthdays you can set up org-agenda. This [[https://www.youtube.com/watch?v=PNE-mgkZ6HM&t=5s][Youtube Video]] gives a good overview of the topic.
+   
+* LaTeX Setup
+
+  I like to compile latex documents using a docker container I have built. This allows me to just install [[https://www.docker.com/][docker]] and have a consistent build environment accross platforms without having to go through the hassle of having to install e.g. the full tex-live on each and every machine.
+
+  Once I'm done working with latex I can simply delete the container from my system and have everything removed cleanly without leaving a mess or utilizing disk space for nothing.
+
+  The [[https://github.com/authsec/sphinx][authsec/sphinx]] container contains everything needed to properly compile a latex document, as it contains a full tex-live installation amongst other things.
+
+  When exporting from =org-mode= you need to change the latex binary for the export to successfully use the =pdflatex= utility inside the container. You basically supply a list of commands that you want executed to produce the PDF from the =org= file.
+
+  A first approach can look like that:
+
+  #+begin_src emacs-lisp :tangle no
+    (setq org-latex-pdf-process
+	  (list
+	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx pdflatex -interaction nonstopmode -shell-escape %b.tex"
+	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx biber %b"
+	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx pdflatex -interaction nonstopmode -shell-escape %b.tex"
+	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx pdflatex -interaction nonstopmode -shell-escape %b.tex"
+	   ))
+  #+end_src
+
+  This however will start the container runtime 4 times. This is not particularly bad, but at the same time also not very efficient. So we can optimize this to have the 4 commands executed inside the container by concatenating the commands to run like so (we're also using xelatex here):
+
+  #+begin_src emacs-lisp
+    (setq org-latex-pdf-process
+	  (list
+	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'pdflatex -interaction nonstopmode -shell-escape %b.tex && biber %b;  pdflatex -interaction nonstopmode -shell-escape %b.tex && pdflatex -interaction nonstopmode -shell-escape %b.tex'"
+	   ))
+  #+end_src
+  
+** Source Code Blocks
+   To display nice source code blocks you can use the package =minted= which can be set up like this:
+
+   #+begin_src emacs-lisp
+     (setq org-latex-listings 'minted
+	   org-latex-packages-alist '(("" "minted"))
+	   org-latex-minted-options '(("breaklines" "true")
+				      ("breakanywhere" "true")))
+   #+end_src
+
