@@ -133,7 +133,7 @@
        :if (display-graphic-p)
        :hook (dired-mode . all-the-icons-dired-mode))
 
-   #+end_src
+       #+end_src
   
 * Show Keybindings
 
@@ -369,13 +369,12 @@
    =org-roam= aids building a second brain. It basically a implementation of the Zettelkasten note-taking strategy. This allows you to see connections between different notes, that you may not have seen before.
 
    #+begin_src emacs-lisp
+     (setq org-roam-v2-ack t)
      (use-package org-roam
        :ensure t
-       :init
-       (setq org-roam-v2-ack t)
        :custom
        ;; make sure this directory exists
-       (org-roam-directory "~/roam-notes")
+       (org-roam-directory "~/research/roam-notes")
        ;; configure the folder where dailies are stored, make sure this exists as well
        (org-roam-dailies-directory "dailies")
        ;; Lets you use completion-at-point
@@ -399,7 +398,27 @@
        )
    #+end_src
    
+** Org Ref
+
+   =org-ref= helps to manage and insert citations in =org=mode=.
+      
+   #+begin_src emacs-lisp
+     (use-package org-ref
+       :after org
+       :init
+       (setq org-ref-completion-library 'org-ref-ivy-cite)
+       :config
+
+       (setq reftex-default-bibliography '("~/research/bibliography/references.bib"))
+       (setq org-ref-bibliography-notes "~/research/bibliography/notes.org")
+       (setq org-ref-default-bibliography '("~/research/bibliography/references.bib"))
+       (setq org-ref-pdf-directory "~/research/bibliography/bibtex-pdfs/")
+       :demand t ;; Demand loading, so links work immediately
+       )
+   #+end_src
+   
 * LaTeX Setup
+   
 
   I like to compile latex documents using a docker container I have built. This allows me to just install [[https://www.docker.com/][docker]] and have a consistent build environment accross platforms without having to go through the hassle of having to install e.g. the full tex-live on each and every machine.
 
@@ -437,6 +456,22 @@
      (setq org-latex-listings 'minted
 	   org-latex-packages-alist '(("" "minted"))
 	   org-latex-minted-options '(("breaklines" "true")
-				      ("breakanywhere" "true")))
+				      ("breakanywhere" "true"))
+	   )
    #+end_src
 
+** BibTeX
+   Add BibTeX setup for latex.
+   
+   #+begin_src emacs-lisp
+     (use-package ivy-bibtex)
+
+     ;; use the newer biblatex
+     (add-to-list 'org-latex-packages-alist '("backend=biber,sortlocale=de" "biblatex"))
+   #+end_src
+
+   
+   #+begin_src emacs-lisp
+     ;;setup dialect to be biblatex as bibtex is quite a bit old
+     (setq bibtex-dialect 'biblatex)
+   #+end_src

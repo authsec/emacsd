@@ -147,13 +147,12 @@
   :after org
   :hook (org-mode . org-bullets-mode))
 
+(setq org-roam-v2-ack t)
 (use-package org-roam
   :ensure t
-  :init
-  (setq org-roam-v2-ack t)
   :custom
   ;; make sure this directory exists
-  (org-roam-directory "~/roam-notes")
+  (org-roam-directory "~/research/roam-notes")
   ;; configure the folder where dailies are stored, make sure this exists as well
   (org-roam-dailies-directory "dailies")
   ;; Lets you use completion-at-point
@@ -176,6 +175,19 @@
   (org-roam-db-autosync-mode)
   )
 
+(use-package org-ref
+  :after org
+  :init
+  (setq org-ref-completion-library 'org-ref-ivy-cite)
+  :config
+
+  (setq reftex-default-bibliography '("~/research/bibliography/references.bib"))
+  (setq org-ref-bibliography-notes "~/research/bibliography/notes.org")
+  (setq org-ref-default-bibliography '("~/research/bibliography/references.bib"))
+  (setq org-ref-pdf-directory "~/research/bibliography/bibtex-pdfs/")
+  :demand t ;; Demand loading, so links work immediately
+  )
+
 (setq org-latex-pdf-process
       (list
        "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'pdflatex -interaction nonstopmode -shell-escape %b.tex && biber %b;  pdflatex -interaction nonstopmode -shell-escape %b.tex && pdflatex -interaction nonstopmode -shell-escape %b.tex'"
@@ -184,4 +196,13 @@
 (setq org-latex-listings 'minted
       org-latex-packages-alist '(("" "minted"))
       org-latex-minted-options '(("breaklines" "true")
-				 ("breakanywhere" "true")))
+				 ("breakanywhere" "true"))
+      )
+
+(use-package ivy-bibtex)
+
+;; use the newer biblatex
+(add-to-list 'org-latex-packages-alist '("backend=biber,sortlocale=de" "biblatex"))
+
+;;setup dialect to be biblatex as bibtex is quite a bit old
+(setq bibtex-dialect 'biblatex)
