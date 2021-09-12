@@ -65,6 +65,16 @@
      (global-visual-line-mode t)
    #+end_src
    
+** Recent Files
+   Emacs can remember recently opened files. After configuring this, you can open recent files with =C-x C-r=.
+
+   #+begin_src emacs-lisp
+     (recentf-mode 1)
+     (setq recentf-max-menu-items 25)
+     (setq recentf-max-saved-items 25)
+     (global-set-key "\C-x\ \C-r" 'recentf-open-files)
+   #+end_src
+   
 * Setup Package Management
 
   Emacs can be extended with more packages. The packages can come from multiple sources, that we have to list in the =init.el= file.
@@ -359,7 +369,7 @@
      (use-package org-bullets
        :after org
        :hook (org-mode . org-bullets-mode))
-   #+end_src
+       #+end_src
 
 ** Org Agenda
 
@@ -369,16 +379,18 @@
    =org-roam= aids building a second brain. It basically a implementation of the Zettelkasten note-taking strategy. This allows you to see connections between different notes, that you may not have seen before.
 
    #+begin_src emacs-lisp
+     (setq my-roam-directory (concat (getenv "HOME") "/research/roam-notes"))
      (setq org-roam-v2-ack t)
      (use-package org-roam
        :ensure t
        :custom
        ;; make sure this directory exists
-       (org-roam-directory "~/research/roam-notes")
+       (org-roam-directory (file-truename my-roam-directory))
        ;; configure the folder where dailies are stored, make sure this exists as well
        (org-roam-dailies-directory "dailies")
        ;; Lets you use completion-at-point
        (org-roam-completion-everywhere t)
+       ;; (org-roam-graph-executable "~/bin/dot")
        :bind(
 	     ("C-c n l" . org-roam-buffer-toggle)
 	     ("C-c n f" . org-roam-node-find)
@@ -398,9 +410,20 @@
        )
    #+end_src
    
+** Org Roam BibTeX
+   [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] is integrating roam bibtex and org-ref .
+
+   #+begin_src emacs-lisp
+     (use-package org-roam-bibtex
+       :after org-roam
+       :hook (org-roam-mode . org-roam-bibtex-mode)
+       :config
+       (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
+   #+end_src
+   
 ** Org Ref
 
-   =org-ref= helps to manage and insert citations in =org=mode=.
+   =org-ref= helps to manage and insert citations in =org-mode=.
       
    #+begin_src emacs-lisp
      (use-package org-ref
@@ -408,7 +431,6 @@
        :init
        (setq org-ref-completion-library 'org-ref-ivy-cite)
        :config
-
        (setq reftex-default-bibliography '("~/research/bibliography/references.bib"))
        (setq org-ref-bibliography-notes "~/research/bibliography/notes.org")
        (setq org-ref-default-bibliography '("~/research/bibliography/references.bib"))
@@ -417,6 +439,22 @@
        )
    #+end_src
    
+* Deft
+  =deft= is a full text search mode that allows you to quickly find your filter expression in a bunch of files.
+
+  You can configure it with:
+
+  #+begin_src emacs-lisp
+    (use-package deft
+      :config
+      (setq deft-directory my-roam-directory
+	    deft-recursive t
+	    deft-strip-summary-regexp ":PROPERTIES:\n\\(.+\n\\)+:END:\n"
+	    deft-use-filename-as-title t)
+      :bind
+      ("C-c n s" . deft))
+  #+end_src
+  
 * LaTeX Setup
    
 

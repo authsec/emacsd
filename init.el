@@ -25,6 +25,11 @@
 
 (global-visual-line-mode t)
 
+(recentf-mode 1)
+(setq recentf-max-menu-items 25)
+(setq recentf-max-saved-items 25)
+(global-set-key "\C-x\ \C-r" 'recentf-open-files)
+
 ;; Initialize package source
 (require 'package)
 
@@ -147,16 +152,18 @@
   :after org
   :hook (org-mode . org-bullets-mode))
 
+(setq my-roam-directory (concat (getenv "HOME") "/research/roam-notes"))
 (setq org-roam-v2-ack t)
 (use-package org-roam
   :ensure t
   :custom
   ;; make sure this directory exists
-  (org-roam-directory "~/research/roam-notes")
+  (org-roam-directory (file-truename my-roam-directory))
   ;; configure the folder where dailies are stored, make sure this exists as well
   (org-roam-dailies-directory "dailies")
   ;; Lets you use completion-at-point
   (org-roam-completion-everywhere t)
+  ;; (org-roam-graph-executable "~/bin/dot")
   :bind(
 	("C-c n l" . org-roam-buffer-toggle)
 	("C-c n f" . org-roam-node-find)
@@ -175,18 +182,32 @@
   (org-roam-db-autosync-mode)
   )
 
+(use-package org-roam-bibtex
+  :after org-roam
+  :hook (org-roam-mode . org-roam-bibtex-mode)
+  :config
+  (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
+
 (use-package org-ref
   :after org
   :init
   (setq org-ref-completion-library 'org-ref-ivy-cite)
   :config
-
   (setq reftex-default-bibliography '("~/research/bibliography/references.bib"))
   (setq org-ref-bibliography-notes "~/research/bibliography/notes.org")
   (setq org-ref-default-bibliography '("~/research/bibliography/references.bib"))
   (setq org-ref-pdf-directory "~/research/bibliography/bibtex-pdfs/")
   :demand t ;; Demand loading, so links work immediately
   )
+
+(use-package deft
+  :config
+  (setq deft-directory my-roam-directory
+	deft-recursive t
+	deft-strip-summary-regexp ":PROPERTIES:\n\\(.+\n\\)+:END:\n"
+	deft-use-filename-as-title t)
+  :bind
+  ("C-c n s" . deft))
 
 (setq org-latex-pdf-process
       (list
