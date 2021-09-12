@@ -1,5 +1,6 @@
 #+title: Authsec Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ./initl.el :mkdirp yes
+#+latex_class: koma-article
 
 * Introduction
 
@@ -430,6 +431,9 @@
        :after org
        :init
        (setq org-ref-completion-library 'org-ref-ivy-cite)
+       :bind (
+	      ("C-c b i" . org-ref-url-html-to-bibtex)
+	      )
        :config
        (setq reftex-default-bibliography '("~/research/bibliography/references.bib"))
        (setq org-ref-bibliography-notes "~/research/bibliography/notes.org")
@@ -437,6 +441,7 @@
        (setq org-ref-pdf-directory "~/research/bibliography/bibtex-pdfs/")
        :demand t ;; Demand loading, so links work immediately
        )
+
    #+end_src
    
 * Deft
@@ -512,4 +517,41 @@
    #+begin_src emacs-lisp
      ;;setup dialect to be biblatex as bibtex is quite a bit old
      (setq bibtex-dialect 'biblatex)
+     ;; variables that control bibtex key format for auto-generation
+     ;; I want firstauthor-year-title-words
+     ;; this usually makes a legitimate filename to store pdfs under.
+     (setq bibtex-autokey-year-length 4
+	   bibtex-autokey-name-year-separator "-"
+	   bibtex-autokey-year-title-separator "-"
+	   bibtex-autokey-titleword-separator "-"
+	   bibtex-autokey-titlewords 2
+	   bibtex-autokey-titlewords-stretch 1
+	   bibtex-autokey-titleword-length 5)
    #+end_src
+
+** New LaTeX Classes
+
+   If you want to export with a different LaTeX template, you can do this
+
+   #+begin_src emacs-lisp
+     (require 'ox-latex)
+     (unless (boundp 'org-latex-classes)
+       (setq org-latex-classes nil))
+   #+end_src
+
+   
+*** KOMA-article
+
+    This defines the KOMA scrartcl class and still allows for the previously defined packages to be present.
+
+    #+begin_src emacs-lisp
+      (eval-after-load 'ox-latex
+	'(add-to-list 'org-latex-classes
+		      '("koma-article"
+			"\\documentclass{scrartcl}"
+			("\\section{%s}" . "\\section*{%s}")
+			("\\subsection{%s}" . "\\subsection*{%s}")
+			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+			("\\paragraph{%s}" . "\\paragraph*{%s}")
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+    #+end_src
