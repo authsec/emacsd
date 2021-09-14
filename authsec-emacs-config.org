@@ -6,7 +6,7 @@
 
   This =.org= file contains my Emacs configuration for Emacs 27.2+. There is a pretty good guideline on [[https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#on-macos][the Doom Emacs project]] that tells you which dependencies to install in order to get a proper Emacs installation on your system of choice.
 
-  I am using the =emacs-mac= package from =brew=. It is installed
+  I am on a Mac and use the =emacs-mac= package from =brew=. It can be installed
   with:
 
   #+begin_src sh
@@ -16,15 +16,24 @@
     brew install coreutils fd
     # Installs clang
     xcode-select --install
+    brew tap railwaycat/emacsmacport
+    brew install emacs-mac --with-modules
   #+end_src
 
-  In order to be able to open Emacs from a Spotlight search you need to create a proper alias. A symlink won't show up in Spotlight.
+  In order to be able to open Emacs from a Spotlight search you need to create a proper alias. A symlink won't show up in Spotlight. Please note that the alias also does not get e very prominent position when using Spotlight.
 
-  You can create the proper alias with the following command:
+  You can *either* create the proper alias with the following command:
 
   #+begin_src sh
     osascript -e 'tell application "Finder" to make alias file to POSIX file "/usr/local/opt/emacs-mac/Emacs.app" at POSIX file "/Applications/"'
   #+end_src
+
+  *or* you simply copy Emacs to the =/Applications= folder like so:
+
+  #+begin_src shell
+    cp -r /usr/local/opt/emacs-mac/Emacs.app /Applications/Emacs.app
+  #+end_src
+  
 
 * Base Configuration
 
@@ -54,7 +63,7 @@
     (setq visible-bell t); Setup visible bell
 
     ;; Setup a font
-    (set-face-attribute 'default nil :font "PragmataPro" :height 280)
+    (set-face-attribute 'default nil :font "PragmataPro" :height 180)
 
   #+end_src
 
