@@ -21,7 +21,7 @@
 (setq visible-bell t); Setup visible bell
 
 ;; Setup a font
-(set-face-attribute 'default nil :font "PragmataPro" :height 280)
+(set-face-attribute 'default nil :font "PragmataPro" :height 180)
 
 (global-visual-line-mode t)
 
@@ -152,6 +152,30 @@
   :after org
   :hook (org-mode . org-bullets-mode))
 
+(setq org-agenda-files
+      '("~/research/org/tasks.org"))
+(setq org-agenda-start-with-log-mode t)
+(setq org-log-done 'time)
+(setq org-log-into-drawer t)
+
+(setq org-todo-keywords
+      '(
+	(sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+	(sequence "CONTACT(c)" "WAITING_FOR_RESPONSE(w)" "|" "DONE(d)")
+	)
+
+      )
+
+(setq org-tag-alist
+      '((:startgroup)
+	;; Put mutually exclusive tags here
+	(:endgroup)
+	("email" . ?e)
+	("phone" . ?p)
+	("message" . ?m)
+	)
+      )
+
 (setq my-roam-directory (concat (getenv "HOME") "/research/roam-notes"))
 (setq org-roam-v2-ack t)
 (use-package org-roam
@@ -192,6 +216,9 @@
   :after org
   :init
   (setq org-ref-completion-library 'org-ref-ivy-cite)
+  :bind (
+	 ("C-c b i" . org-ref-url-html-to-bibtex)
+	 )
   :config
   (setq reftex-default-bibliography '("~/research/bibliography/references.bib"))
   (setq org-ref-bibliography-notes "~/research/bibliography/notes.org")
@@ -227,3 +254,27 @@
 
 ;;setup dialect to be biblatex as bibtex is quite a bit old
 (setq bibtex-dialect 'biblatex)
+;; variables that control bibtex key format for auto-generation
+;; I want firstauthor-year-title-words
+;; this usually makes a legitimate filename to store pdfs under.
+(setq bibtex-autokey-year-length 4
+      bibtex-autokey-name-year-separator "-"
+      bibtex-autokey-year-title-separator "-"
+      bibtex-autokey-titleword-separator "-"
+      bibtex-autokey-titlewords 2
+      bibtex-autokey-titlewords-stretch 1
+      bibtex-autokey-titleword-length 5)
+
+(require 'ox-latex)
+(unless (boundp 'org-latex-classes)
+  (setq org-latex-classes nil))
+
+(eval-after-load 'ox-latex
+  '(add-to-list 'org-latex-classes
+		'("koma-article"
+		  "\\documentclass{scrartcl}"
+		  ("\\section{%s}" . "\\section*{%s}")
+		  ("\\subsection{%s}" . "\\subsection*{%s}")
+		  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+		  ("\\paragraph{%s}" . "\\paragraph*{%s}")
+		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
