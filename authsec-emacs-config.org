@@ -384,6 +384,46 @@
 ** Org Agenda
 
    In order to track task and e.g. birthdays you can set up org-agenda. This [[https://www.youtube.com/watch?v=PNE-mgkZ6HM&t=5s][Youtube Video]] gives a good overview of the topic.
+
+   #+begin_src emacs-lisp
+     (setq org-agenda-files
+	   '("~/research/org/tasks.org"))
+     (setq org-agenda-start-with-log-mode t)
+     (setq org-log-done 'time)
+     (setq org-log-into-drawer t)
+   #+end_src
+
+*** Keywords for TODO states
+
+    You can set up additional states for your tasks by setting up mor todo keywords.
+   
+    #+begin_src emacs-lisp
+      (setq org-todo-keywords
+	    '(
+	      (sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+	      (sequence "CONTACT(c)" "WAITING_FOR_RESPONSE(w)" "|" "DONE(d)")
+	      )
+
+	    )
+    #+end_src
+
+*** Global Tags
+
+    If you want to use a global tag list, you can configure one like so:
+    
+    #+begin_src emacs-lisp
+      (setq org-tag-alist
+	    '((:startgroup)
+	      ;; Put mutually exclusive tags here
+	      (:endgroup)
+	      ("email" . ?e)
+	      ("phone" . ?p)
+	      ("message" . ?m)
+	      )
+	    )
+    #+end_src
+
+    You can append any of these tags by pressing =C-c C-q= on the line with the TODO item.
    
 ** Org Roam
    =org-roam= aids building a second brain. It basically a implementation of the Zettelkasten note-taking strategy. This allows you to see connections between different notes, that you may not have seen before.
