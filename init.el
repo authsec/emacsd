@@ -131,6 +131,9 @@
 (use-package org
   :custom
   (org-ellipsis " ⮷")
+  :bind(
+	("C-c a c" . org-capture)
+	)
   )
 
 (with-eval-after-load 'org
@@ -157,6 +160,9 @@
 (setq org-agenda-start-with-log-mode t)
 (setq org-log-done 'time)
 (setq org-log-into-drawer t)
+(setq org-capture-templates
+      '(("t" "Todo" entry (file+datetree "~/research/org/tasks.org")
+	 "* TODO %?\n  %i\n  %a")))
 
 (setq org-todo-keywords
       '(
