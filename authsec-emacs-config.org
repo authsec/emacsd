@@ -153,7 +153,7 @@
        :if (display-graphic-p)
        :hook (dired-mode . all-the-icons-dired-mode))
 
-       #+end_src
+   #+end_src
   
 * Show Keybindings
 
@@ -265,7 +265,7 @@
       )
   #+end_src
   
-* Read-Only Buffers
+* Read-Only Buffers 
 
   You can make a buffer read-only using =C-x C-q=. This is especially good to know if you accidentally hit a key combination and you can no longer type in your buffer.
 
