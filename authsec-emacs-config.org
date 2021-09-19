@@ -290,8 +290,8 @@
       )
 
     (authsec/leader-key
-      "a" 'org-agenda
       "b" 'counsel-bookmark
+      "s" 'org-attach-screenshot
       )
   #+end_src
 
@@ -334,14 +334,19 @@
   - =org-ellipsis= replaces the '...' characters after a heading when it is folded with the supplied one. The symbol is coming from the =PragmataPro= font, which may not be installed on your system or the site you're viewing this on.
   
   #+begin_src emacs-lisp
+    (setq org-display-inline-images t)
+    (setq org-redisplay-inline-images t)
+    (setq org-startup-with-inline-images "inlineimages")
     (use-package org
       :custom
       (org-ellipsis " ⮷")
       :bind(
-	    ("C-c a c" . org-capture)
+	    ("C-c a" . org-agenda)
+	    ("C-c c" . org-capture)
+	    ("C-c l" . org-store-link)
 	    )
       )
-      #+end_src
+  #+end_src
   
 ** Configure Babel Languages
 
@@ -431,6 +436,24 @@
     #+end_src
 
     You can append any of these tags by pressing =C-c C-q= on the line with the TODO item.
+
+**** Project specific tags
+     If you do need to set up tags that are required for a specific project, or if you you do want a mechanism where you can append additional tags e.g. at work only, you can use [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Directory-Variables.html][Per-Directory Local Variables]].
+
+     To do that, you simply put a file named =.dir-locals.el= in the directory where you hold your =tasks.org= file. The file can look something like this:
+
+     #+begin_src emacs-lisp :tangle no
+       ;; NOT WORKING YET
+       (add-to-list 'org-tag-alist
+
+		    '(
+		      ("myspecial" . ?M)
+		      ("work" . ?w)
+		      )
+
+		    )
+     #+end_src
+    
    
 ** Org Roam
    =org-roam= aids building a second brain. It basically a implementation of the Zettelkasten note-taking strategy. This allows you to see connections between different notes, that you may not have seen before.
@@ -465,6 +488,8 @@
        (org-roam-setup)
        (org-roam-db-autosync-mode)
        )
+     ;; Mapping mouse click to preview does not seem to work
+     ;;(define-key org-roam-mode-map [mouse-1] #'org-roam-preview-visit)
    #+end_src
    
 ** Org Roam BibTeX
@@ -488,6 +513,7 @@
        :init
        (setq org-ref-completion-library 'org-ref-ivy-cite)
        :bind (
+	      ;; Allows you to create a bibtex entry from a URL like a https:// link
 	      ("C-c b i" . org-ref-url-html-to-bibtex)
 	      )
        :config
@@ -498,6 +524,21 @@
        :demand t ;; Demand loading, so links work immediately
        )
 
+	 #+end_src
+   
+** Org Attach Screenshot
+
+   The package [[https://github.com/dfeich/org-screenshot][org-attach-screenshot]] allows you to attach a screenshot into your org document. The below configuration uses the =screencapture= utility found on a Mac. You have to select the screenshot area with the mouse. You may want to tweak this to your setup. 
+
+   #+begin_src emacs-lisp
+     (require 'org-attach-screenshot)
+     (use-package org-attach-screenshot
+       :config (setq org-attach-screenshot-dirfunction
+		     (lambda () 
+		       (progn (cl-assert (buffer-file-name))
+			      (concat (file-name-sans-extension (buffer-file-name))
+				      "-att")))
+		     org-attach-screenshot-command-line "screencapture -i %f"))
    #+end_src
    
 * Deft
