@@ -120,19 +120,24 @@
   )
 
 (authsec/leader-key
-  "a" 'org-agenda
   "b" 'counsel-bookmark
+  "s" 'org-attach-screenshot
   )
 
 (use-package magit
   :commands (magit-status magit-get-current-branch)
   :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
+(setq org-display-inline-images t)
+(setq org-redisplay-inline-images t)
+(setq org-startup-with-inline-images "inlineimages")
 (use-package org
   :custom
   (org-ellipsis " ⮷")
   :bind(
-	("C-c a c" . org-capture)
+	("C-c a" . org-agenda)
+	("C-c c" . org-capture)
+	("C-c l" . org-store-link)
 	)
   )
 
@@ -211,6 +216,8 @@
   (org-roam-setup)
   (org-roam-db-autosync-mode)
   )
+;; Mapping mouse click to preview does not seem to work
+;;(define-key org-roam-mode-map [mouse-1] #'org-roam-preview-visit)
 
 (use-package org-roam-bibtex
   :after org-roam
@@ -223,6 +230,7 @@
   :init
   (setq org-ref-completion-library 'org-ref-ivy-cite)
   :bind (
+	 ;; Allows you to create a bibtex entry from a URL like a https:// link
 	 ("C-c b i" . org-ref-url-html-to-bibtex)
 	 )
   :config
@@ -232,6 +240,15 @@
   (setq org-ref-pdf-directory "~/research/bibliography/bibtex-pdfs/")
   :demand t ;; Demand loading, so links work immediately
   )
+
+(require 'org-attach-screenshot)
+(use-package org-attach-screenshot
+  :config (setq org-attach-screenshot-dirfunction
+		(lambda () 
+		  (progn (cl-assert (buffer-file-name))
+			 (concat (file-name-sans-extension (buffer-file-name))
+				 "-att")))
+		org-attach-screenshot-command-line "screencapture -i %f"))
 
 (use-package deft
   :config
@@ -284,3 +301,5 @@
 		  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
 		  ("\\paragraph{%s}" . "\\paragraph*{%s}")
 		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+
+(use-package git-auto-commit-mode)
