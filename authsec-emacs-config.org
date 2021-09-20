@@ -531,7 +531,6 @@
    The package [[https://github.com/dfeich/org-screenshot][org-attach-screenshot]] allows you to attach a screenshot into your org document. The below configuration uses the =screencapture= utility found on a Mac. You have to select the screenshot area with the mouse. You may want to tweak this to your setup. 
 
    #+begin_src emacs-lisp
-     (require 'org-attach-screenshot)
      (use-package org-attach-screenshot
        :config (setq org-attach-screenshot-dirfunction
 		     (lambda () 
@@ -539,6 +538,7 @@
 			      (concat (file-name-sans-extension (buffer-file-name))
 				      "-att")))
 		     org-attach-screenshot-command-line "screencapture -i %f"))
+     (require 'org-attach-screenshot)
    #+end_src
    
 * Deft
