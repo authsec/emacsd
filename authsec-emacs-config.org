@@ -67,6 +67,29 @@
 
   #+end_src
 
+** Move Backup Files
+   Let emacs create backups in a specific directory, mirroring the same folder structure as the original.
+
+   #+begin_src emacs-lisp
+     ;; make backup to a designated dir, mirroring the full path
+
+     (defun my-backup-file-name (fpath)
+       "Return a new file path of a given file path.
+     If the new path's directories does not exist, create them."
+       (let* (
+	      (backupRootDir "~/.emacs.d/backup/")
+	      (filePath (replace-regexp-in-string "[A-Za-z]:" "" fpath )) ; remove Windows driver letter in path, for example, “C:”
+	      (backupFilePath (replace-regexp-in-string "//" "/" (concat backupRootDir filePath "~") ))
+	      )
+	 (make-directory (file-name-directory backupFilePath) (file-name-directory backupFilePath))
+	 backupFilePath
+	 )
+       )
+
+     (setq make-backup-file-name-function 'my-backup-file-name)
+   #+end_src
+   
+   
 ** Visual Line Mode
 
    This mode allows long lines to be wrapped if they are too long to fit the current window. The mode can globally be enabled with =global-visual-line-mode= or =visual-line-mode= respectively:
