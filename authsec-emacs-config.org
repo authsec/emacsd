@@ -1,6 +1,6 @@
 #+title: Authsec Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ./initl.el :mkdirp yes
-#+latex_class: koma-article
+#+latex_class: memoir-book
 
 * Introduction
 
@@ -547,7 +547,7 @@
        :demand t ;; Demand loading, so links work immediately
        )
 
-	 #+end_src
+   #+end_src
    
 ** Org Attach Screenshot
 
@@ -660,7 +660,7 @@
    #+end_src
 
    
-*** KOMA-article
+*** KOMA Article
 
     This defines the KOMA scrartcl class and still allows for the previously defined packages to be present.
 
@@ -675,3 +675,45 @@
 			("\\paragraph{%s}" . "\\paragraph*{%s}")
 			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
     #+end_src
+
+*** Memoir Article
+    This uses the memoir class as base.
+
+    #+begin_src emacs-lisp
+      (eval-after-load 'ox-latex
+	'(add-to-list 'org-latex-classes
+		      '("memoir-article"
+			"\\documentclass[a4paper,10pt,article,oneside]{memoir}"
+			("\\chapter{%s}" . "\\chapter*{%s}")
+			("\\section{%s}" . "\\section*{%s}")
+			("\\subsection{%s}" . "\\subsection*{%s}")       
+			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+			("\\paragraph{%s}" . "\\paragraph*{%s}")
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+		      ))
+    #+end_src
+
+*** Memoir Book
+
+    Use this to set a book.
+
+    #+begin_src emacs-lisp
+      (eval-after-load 'ox-latex
+	'(add-to-list 'org-latex-classes
+		      '("memoir-book"
+			"\\documentclass[a4paper,11pt,extrafontsizes,twoside]{memoir}"
+			("\\chapter{%s}" . "\\chapter*{%s}")
+			("\\section{%s}" . "\\section*{%s}")
+			("\\subsection{%s}" . "\\subsection*{%s}")       
+			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+			("\\paragraph{%s}" . "\\paragraph*{%s}")
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+		      ))
+    #+end_src
+* Git Integration
+
+  If you might want to store your documents in a =git= repository you can use [[https://github.com/ryuslash/git-auto-commit-mode][Git Auto Commit Mode]] to automatically commit your document to a predefined git repository.
+
+  #+begin_src emacs-lisp
+    (use-package git-auto-commit-mode) 
+  #+end_src
