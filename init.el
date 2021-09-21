@@ -23,6 +23,23 @@
 ;; Setup a font
 (set-face-attribute 'default nil :font "PragmataPro" :height 180)
 
+;; make backup to a designated dir, mirroring the full path
+
+(defun my-backup-file-name (fpath)
+  "Return a new file path of a given file path.
+If the new path's directories does not exist, create them."
+  (let* (
+	 (backupRootDir "~/.emacs.d/backup/")
+	 (filePath (replace-regexp-in-string "[A-Za-z]:" "" fpath )) ; remove Windows driver letter in path, for example, “C:”
+	 (backupFilePath (replace-regexp-in-string "//" "/" (concat backupRootDir filePath "~") ))
+	 )
+    (make-directory (file-name-directory backupFilePath) (file-name-directory backupFilePath))
+    backupFilePath
+    )
+  )
+
+(setq make-backup-file-name-function 'my-backup-file-name)
+
 (global-visual-line-mode t)
 
 (recentf-mode 1)
@@ -241,7 +258,6 @@
   :demand t ;; Demand loading, so links work immediately
   )
 
-(require 'org-attach-screenshot)
 (use-package org-attach-screenshot
   :config (setq org-attach-screenshot-dirfunction
 		(lambda () 
@@ -249,6 +265,7 @@
 			 (concat (file-name-sans-extension (buffer-file-name))
 				 "-att")))
 		org-attach-screenshot-command-line "screencapture -i %f"))
+(require 'org-attach-screenshot)
 
 (use-package deft
   :config
@@ -301,5 +318,29 @@
 		  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
 		  ("\\paragraph{%s}" . "\\paragraph*{%s}")
 		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+
+(eval-after-load 'ox-latex
+  '(add-to-list 'org-latex-classes
+		'("memoir-article"
+		  "\\documentclass[a4paper,10pt,article,oneside]{memoir}"
+		  ("\\chapter{%s}" . "\\chapter*{%s}")
+		  ("\\section{%s}" . "\\section*{%s}")
+		  ("\\subsection{%s}" . "\\subsection*{%s}")       
+		  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+		  ("\\paragraph{%s}" . "\\paragraph*{%s}")
+		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+		))
+
+(eval-after-load 'ox-latex
+  '(add-to-list 'org-latex-classes
+		'("memoir-book"
+		  "\\documentclass[a4paper,11pt,extrafontsizes,twoside]{memoir}"
+		  ("\\chapter{%s}" . "\\chapter*{%s}")
+		  ("\\section{%s}" . "\\section*{%s}")
+		  ("\\subsection{%s}" . "\\subsection*{%s}")       
+		  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+		  ("\\paragraph{%s}" . "\\paragraph*{%s}")
+		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+		))
 
 (use-package git-auto-commit-mode)
