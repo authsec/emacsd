@@ -494,6 +494,21 @@
      #+end_src
     
    
+** Org Links
+
+   Add additional links to be understood by org-mode.
+   
+   
+*** DEVONthink
+    This configuration enables clickable links to =x-devonthink-item://= links, which will open in DEVONthink.
+
+    #+begin_src emacs-lisp
+      (org-add-link-type "x-devonthink-item" 'org-devonthink-item-open)
+      (defun org-devonthink-item-open (uid)
+	"Open the given uid, which is a reference to an item in Devonthink"
+	(shell-command (concat "open \"x-devonthink-item:" uid "\"")))
+    #+end_src
+    
 ** Org Roam
    =org-roam= aids building a second brain. It basically a implementation of the Zettelkasten note-taking strategy. This allows you to see connections between different notes, that you may not have seen before.
 
