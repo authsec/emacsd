@@ -446,12 +446,12 @@
 
 *** Keywords for TODO states
 
-    You can set up additional states for your tasks by setting up mor todo keywords.
+    You can set up additional states for your tasks by setting up more todo keywords.
    
     #+begin_src emacs-lisp
       (setq org-todo-keywords
 	    '(
-	      (sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+	      (sequence "TODO(t)" "NEXT(n)" "DAILY(a)" "|" "DONE(d)")
 	      (sequence "CONTACT(c)" "WAITING_FOR_RESPONSE(w)" "|" "DONE(d)")
 	      )
 
