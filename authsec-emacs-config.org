@@ -392,8 +392,14 @@
      (with-eval-after-load 'org
        (org-babel-do-load-languages
 	'org-babel-load-languages
-	'((emacs-lisp . t)
-	  (python . t))
+	'(
+	  (dot . t)
+	  (emacs-lisp . t)
+	  (plantuml . t)
+	  (python . t)
+	  (shell . t)
+	  (sql . t)
+	  )
 	)
 
        (push '("conf-unix" . conf-unix) org-src-lang-modes))
