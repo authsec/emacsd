@@ -377,6 +377,8 @@
 	    ("C-c l" . org-store-link)
 	    )
       )
+    ;; Store new notes at the beginning of the file
+    (setq org-reverse-note-order t)
   #+end_src
   
 ** Configure Babel Languages
