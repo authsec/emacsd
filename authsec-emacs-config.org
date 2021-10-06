@@ -546,17 +546,24 @@
      ;;(define-key org-roam-mode-map [mouse-1] #'org-roam-preview-visit)
    #+end_src
    
-** Org Roam BibTeX
-   [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] is integrating roam bibtex and org-ref .
+*** Org Roam BibTeX
+    [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] is integrating roam bibtex and org-ref .
 
-   #+begin_src emacs-lisp
-     (use-package org-roam-bibtex
-       :after org-roam
-       :hook (org-roam-mode . org-roam-bibtex-mode)
-       :config
-       (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
-   #+end_src
+    #+begin_src emacs-lisp
+      (use-package org-roam-bibtex
+	:after org-roam
+	:hook (org-roam-mode . org-roam-bibtex-mode)
+	:config
+	(require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
+    #+end_src
+    
    
+*** Org File Versioning
+    This lets you version your roam notes.
+
+    You can also enable attachment versioning as shown [[https://orgmode.org/manual/Automatic-version_002dcontrol-with-Git.html][here]].
+    
+    
 ** Org Ref
 
    =org-ref= helps to manage and insert citations in =org-mode=.
@@ -1289,5 +1296,57 @@
   If you might want to store your documents in a =git= repository you can use [[https://github.com/ryuslash/git-auto-commit-mode][Git Auto Commit Mode]] to automatically commit your document to a predefined git repository.
 
   #+begin_src emacs-lisp
-    (use-package git-auto-commit-mode) 
+    (use-package git-auto-commit-mode)
+    (setq gac-automatically-push-p t)
+    (setq gac-automatically-add-new-files-p t)
+    ;; Commit/Push every 5 minutes
+    (setq gac-debounce-interval 300)
   #+end_src
+  
+** Enable directory  for auto-commit
+
+   In order for this to work, you need to enable auto commit on a directory basis.
+
+   In my case the files reside under the =~/research= directory. So place a =.dir-locals.el= variable there (which also can be commited to the repository if not excluded) with the following content:
+
+   #+begin_src emacs-lisp :tangle no
+     ((nil . ((eval git-auto-commit-mode 1))))
+   #+end_src
+
+* Plantuml
+
+  Plantuml can be run in server mode which enables you to start a local docker container that will serve as an endpoint for emacs. You can start the docker container with:
+
+  #+begin_src shell
+    docker run -d -p 8080:8080 plantuml/plantuml-server:jetty
+  #+end_src
+
+  Now all you need to do is set up emacs with this configuration:
+
+  #+begin_src emacs-lisp
+    (use-package plantuml-mode
+      :ensure t
+      :mode
+      "\\.puml\\''"
+      :custom
+      (plantuml-jar-path nil)
+      (plantuml-default-exec-mode 'server)
+      (plantuml-server-url "http://localhost:8080/plantuml")
+      )
+    (setq plantuml-default-exec-mode 'server)
+  #+end_src
+
+  After this you can use plantuml like:
+
+  (<hit C-c ' to open plantuml buffer> or type source code inside the block)
+  
+  #+begin_src plantuml :file output.png
+    @startuml
+    ' this is a comment
+    Alice -> Bob: Authentication Request
+    Bob --> Alice: Authentication Response
+    John --> Alice: another Authentication Request
+    Alice --> John: another Authentication Response
+    @enduml
+  #+end_src
+
