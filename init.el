@@ -145,6 +145,9 @@ If the new path's directories does not exist, create them."
   :commands (magit-status magit-get-current-branch)
   :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
+(use-package dockerfile-mode)
+(add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
+
 (setq org-display-inline-images t)
 (setq org-redisplay-inline-images t)
 (setq org-startup-with-inline-images "inlineimages")
@@ -157,12 +160,20 @@ If the new path's directories does not exist, create them."
 	("C-c l" . org-store-link)
 	)
   )
+;; Store new notes at the beginning of the file
+(setq org-reverse-note-order t)
 
 (with-eval-after-load 'org
   (org-babel-do-load-languages
    'org-babel-load-languages
-   '((emacs-lisp . t)
-     (python . t))
+   '(
+     (dot . t)
+     (emacs-lisp . t)
+     (plantuml . t)
+     (python . t)
+     (shell . t)
+     (sql . t)
+     )
    )
 
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
@@ -188,7 +199,7 @@ If the new path's directories does not exist, create them."
 
 (setq org-todo-keywords
       '(
-	(sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+	(sequence "TODO(t)" "NEXT(n)" "DAILY(a)" "|" "DONE(d)")
 	(sequence "CONTACT(c)" "WAITING_FOR_RESPONSE(w)" "|" "DONE(d)")
 	)
 
@@ -203,6 +214,11 @@ If the new path's directories does not exist, create them."
 	("message" . ?m)
 	)
       )
+
+(org-add-link-type "x-devonthink-item" 'org-devonthink-item-open)
+(defun org-devonthink-item-open (uid)
+  "Open the given uid, which is a reference to an item in Devonthink"
+  (shell-command (concat "open \"x-devonthink-item:" uid "\"")))
 
 (setq my-roam-directory (concat (getenv "HOME") "/research/roam-notes"))
 (setq org-roam-v2-ack t)
@@ -344,3 +360,18 @@ If the new path's directories does not exist, create them."
 		))
 
 (use-package git-auto-commit-mode)
+(setq gac-automatically-push-p t)
+(setq gac-automatically-add-new-files-p t)
+;; Commit/Push every 5 minutes
+(setq gac-debounce-interval 300)
+
+(use-package plantuml-mode
+  :ensure t
+  :mode
+  "\\.puml\\''"
+  :custom
+  (plantuml-jar-path nil)
+  (plantuml-default-exec-mode 'server)
+  (plantuml-server-url "http://localhost:8080/plantuml")
+  )
+(setq plantuml-default-exec-mode 'server)
