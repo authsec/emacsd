@@ -405,18 +405,43 @@
        (push '("conf-unix" . conf-unix) org-src-lang-modes))
    #+end_src
 
-*** Org Tempo
-    Using =org-tempo= will allow you to quickly create =begin_src..end_src= blocks with a shortcut syntax.
-
-    Using the below setup for example you'd type =<el= and it would render an =emacs-lisp= src block.
+*** Run Codeblocks without confirmation
+    To run =org-babel= block with =C-c C-c= without having to type `yes` everytime you do that, you can set:
 
     #+begin_src emacs-lisp
-      (require 'org-tempo)
-      (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
-      (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-      (add-to-list 'org-structure-template-alist '("py" . "src python"))
-      (add-to-list 'org-structure-template-alist '("java" . "src java"))
+      (setq org-confirm-babel-evaluate nil)
     #+end_src
+
+    You can also configure babel to run automatically for certain languages only. To implement this, you need to define a function such as:
+
+    #+begin_src emacs-lisp :tangle no
+      (defun ck/org-confirm-babel-evaluate (lang body)
+	(not (or (string= lang "latex") (string= lang "maxima"))))
+      (setq org-confirm-babel-evaluate 'ck/org-confirm-babel-evaluate)
+    #+end_src
+
+    As described in [[https://emacs.stackexchange.com/questions/2945/org-babel-eval-with-no-confirmation-is-explicit-eval-yes][this stackoverflow post]].
+    
+*** Run python code blocks in a docker container
+
+    You can run your org-babel =python= code blocks in a docker container by setting the python command like so:
+
+    #+begin_src emacs-lisp
+      (setq org-babel-python-command "docker run --rm -i authsec/sphinx python3")
+    #+end_src
+    
+** Org Tempo
+   Using =org-tempo= will allow you to quickly create =begin_src..end_src= blocks with a shortcut syntax.
+
+   Using the below setup for example you'd type =<el= and it would render an =emacs-lisp= src block.
+
+   #+begin_src emacs-lisp
+     (require 'org-tempo)
+     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+     (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+     (add-to-list 'org-structure-template-alist '("py" . "src python"))
+     (add-to-list 'org-structure-template-alist '("java" . "src java"))
+   #+end_src
 
 ** Org-Bullets
 
