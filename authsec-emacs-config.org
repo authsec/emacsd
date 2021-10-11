@@ -1349,16 +1349,28 @@
   Now all you need to do is set up emacs with this configuration:
 
   #+begin_src emacs-lisp
-    (use-package plantuml-mode
-      :ensure t
-      :mode
-      "\\.puml\\''"
-      :custom
-      (plantuml-jar-path nil)
-      (plantuml-default-exec-mode 'server)
-      (plantuml-server-url "http://localhost:8080/plantuml")
-      )
-    (setq plantuml-default-exec-mode 'server)
+    (require 'ob-plantuml)
+    (defun org-babel-execute:plantuml (body params)
+      "Execute a block of plantuml code with org-babel.
+    This function is called by `org-babel-execute-src-block'."
+      (let* ((result-params (split-string (or (cdr (assoc :results params)) "")))
+	     (out-file (or (cdr (assoc :file params))
+			   (error "PlantUML requires a \":file\" header argument")))
+	     (cmdline (cdr (assoc :cmdline params)))
+	     (in-file (org-babel-temp-file "plantuml-"))
+	     (cmd (concat "docker run --rm -i authsec/sphinx /usr/bin/plantuml"
+			  (if (string= (file-name-extension out-file) "svg")
+			      " -tsvg" "")
+			  (if (string= (file-name-extension out-file) "eps")
+			      " -teps" "")
+			  " -p " cmdline " < "
+			  (org-babel-process-file-name in-file)
+			  " > "
+			  (org-babel-process-file-name out-file))))
+	(with-temp-file in-file (insert (concat "@startuml\n" body "\n@enduml")))
+	(message "%s" cmd) (org-babel-eval cmd "")
+	nil))
+    (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
   #+end_src
 
   After this you can use plantuml like:
@@ -1366,12 +1378,29 @@
   (<hit C-c ' to open plantuml buffer> or type source code inside the block)
   
   #+begin_src plantuml :file output.png
-    @startuml
-    ' this is a comment
-    Alice -> Bob: Authentication Request
-    Bob --> Alice: Authentication Response
-    John --> Alice: another Authentication Request
-    Alice --> John: another Authentication Response
-    @enduml
+    skinparam backgroundcolor transparent
+    Peter -> World: Hello World!
+    World --> Peter: Hello Peter!
   #+end_src
+
+  #+RESULTS:
+  [[file:output.png]]
+
+  #+begin_src plantuml :file gantt.png
+    @startgantt
+    skinparam backgroundcolor transparent
+
+    [Prototype design] lasts 15 days
+    [Test prototype] lasts 10 days
+    -- All example --
+    [Task 1 (1 day)] lasts 1 day
+    [T2 (5 days)] lasts 5 days
+    [T3 (1 week)] lasts 1 week
+    [T4 (1 week and 4 days)] lasts 1 week and 4 days
+    [T5 (2 weeks)] lasts 2 weeks
+    @endgantt
+  #+end_src
+
+  #+RESULTS:
+  [[file:gantt.png]]
 
