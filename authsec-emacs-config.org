@@ -61,11 +61,11 @@
     (menu-bar-mode -1)   ; Disable the menubar
 
     (setq visible-bell t); Setup visible bell
+    (show-paren-mode 1)  ; Highlight matching brackets (or braces/parenthesis)
 
     ;; Setup a font
     (set-face-attribute 'default nil :font "PragmataPro" :height 180)
-
-  #+end_src
+#+end_src
 
 ** Move Backup Files
    Let emacs create backups in a specific directory, mirroring the same folder structure as the original.
