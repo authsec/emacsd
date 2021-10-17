@@ -644,7 +644,8 @@
   #+end_src
   
 * LaTeX Setup
-   
+
+  *NOTE:* If you are using this on a Mac with Docker Desktop, make sure that you have `Use gRPC FUSE for file sharing` enabled in the `General` category. If you don't do this, =docker= gets stuck and starts to hang while building if you changed the source file inbetween two invocations of the =docker run= command. Restarting the docker engine is the only thing that helps to resolve the issue in that case.
 
   I like to compile latex documents using a docker container I have built. This allows me to just install [[https://www.docker.com/][docker]] and have a consistent build environment accross platforms without having to go through the hassle of having to install e.g. the full tex-live on each and every machine.
 
@@ -668,10 +669,19 @@
 
   This however will start the container runtime 4 times. This is not particularly bad, but at the same time also not very efficient. So we can optimize this to have the 4 commands executed inside the container by concatenating the commands to run like so (we're also using xelatex here):
 
-  #+begin_src emacs-lisp
+  #+begin_src emacs-lisp :tangle no
     (setq org-latex-pdf-process
 	  (list
 	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'pdflatex -interaction nonstopmode -shell-escape %b.tex && biber %b;  pdflatex -interaction nonstopmode -shell-escape %b.tex && pdflatex -interaction nonstopmode -shell-escape %b.tex'"
+	   ))
+  #+end_src
+
+  This whole concept can even be further optimized by using the [[https://ctan.org/pkg/latexmk?lang=en][latexmk]] package. The new command looks like this:
+
+  #+begin_src emacs-lisp
+    (setq org-latex-pdf-process
+	  (list
+	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -C -bibtex && rm -f %b.run.xml %b.tex'"
 	   ))
   #+end_src
   
@@ -808,7 +818,7 @@
   #+begin_src emacs-lisp
     (require 'ob-plantuml)
     (defun org-babel-execute:plantuml (body params)
-      "Execute a block of plantuml code with org-babel.
+      "Execute a block of plantuml code with org-babel with the help of a docker container.
     This function is called by `org-babel-execute-src-block'."
       (let* ((result-params (split-string (or (cdr (assoc :results params)) "")))
 	     (out-file (or (cdr (assoc :file params))
