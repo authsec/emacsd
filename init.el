@@ -19,6 +19,7 @@
 (menu-bar-mode -1)   ; Disable the menubar
 
 (setq visible-bell t); Setup visible bell
+(show-paren-mode 1)  ; Highlight matching brackets (or braces/parenthesis)
 
 ;; Setup a font
 (set-face-attribute 'default nil :font "PragmataPro" :height 180)
@@ -41,6 +42,8 @@ If the new path's directories does not exist, create them."
 (setq make-backup-file-name-function 'my-backup-file-name)
 
 (global-visual-line-mode t)
+
+(global-hl-line-mode t)
 
 (recentf-mode 1)
 (setq recentf-max-menu-items 25)
@@ -178,6 +181,10 @@ If the new path's directories does not exist, create them."
 
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
+(setq org-confirm-babel-evaluate nil)
+
+(setq org-babel-python-command "docker run --rm -i authsec/sphinx python3")
+
 (require 'org-tempo)
 (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
 (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
@@ -283,6 +290,13 @@ If the new path's directories does not exist, create them."
 		org-attach-screenshot-command-line "screencapture -i %f"))
 (require 'org-attach-screenshot)
 
+(use-package ox-hugo
+  :ensure t            ;Auto-install the package from Melpa (optional)
+  :after ox)
+
+(use-package toml-mode
+  :ensure t)
+
 (use-package deft
   :config
   (setq deft-directory my-roam-directory
@@ -294,7 +308,7 @@ If the new path's directories does not exist, create them."
 
 (setq org-latex-pdf-process
       (list
-       "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'pdflatex -interaction nonstopmode -shell-escape %b.tex && biber %b;  pdflatex -interaction nonstopmode -shell-escape %b.tex && pdflatex -interaction nonstopmode -shell-escape %b.tex'"
+       "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -C -bibtex && rm -f %b.run.xml %b.tex'"
        ))
 
 (setq org-latex-listings 'minted
@@ -337,27 +351,25 @@ If the new path's directories does not exist, create them."
 
 (eval-after-load 'ox-latex
   '(add-to-list 'org-latex-classes
-		'("memoir-article"
-		  "\\documentclass[a4paper,10pt,article,oneside]{memoir}"
+		'("koma-report"
+		  "\\documentclass{scrreprt}"
 		  ("\\chapter{%s}" . "\\chapter*{%s}")
 		  ("\\section{%s}" . "\\section*{%s}")
-		  ("\\subsection{%s}" . "\\subsection*{%s}")       
+		  ("\\subsection{%s}" . "\\subsection*{%s}")
 		  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
 		  ("\\paragraph{%s}" . "\\paragraph*{%s}")
-		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
-		))
+		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
 
 (eval-after-load 'ox-latex
   '(add-to-list 'org-latex-classes
-		'("memoir-book"
-		  "\\documentclass[a4paper,11pt,extrafontsizes,twoside]{memoir}"
+		'("koma-book"
+		  "\\documentclass{scrbook}"
 		  ("\\chapter{%s}" . "\\chapter*{%s}")
 		  ("\\section{%s}" . "\\section*{%s}")
-		  ("\\subsection{%s}" . "\\subsection*{%s}")       
+		  ("\\subsection{%s}" . "\\subsection*{%s}")
 		  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
 		  ("\\paragraph{%s}" . "\\paragraph*{%s}")
-		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
-		))
+		  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
 
 (use-package git-auto-commit-mode)
 (setq gac-automatically-push-p t)
@@ -365,13 +377,25 @@ If the new path's directories does not exist, create them."
 ;; Commit/Push every 5 minutes
 (setq gac-debounce-interval 300)
 
-(use-package plantuml-mode
-  :ensure t
-  :mode
-  "\\.puml\\''"
-  :custom
-  (plantuml-jar-path nil)
-  (plantuml-default-exec-mode 'server)
-  (plantuml-server-url "http://localhost:8080/plantuml")
-  )
-(setq plantuml-default-exec-mode 'server)
+(require 'ob-plantuml)
+(defun org-babel-execute:plantuml (body params)
+  "Execute a block of plantuml code with org-babel with the help of a docker container.
+This function is called by `org-babel-execute-src-block'."
+  (let* ((result-params (split-string (or (cdr (assoc :results params)) "")))
+	 (out-file (or (cdr (assoc :file params))
+		       (error "PlantUML requires a \":file\" header argument")))
+	 (cmdline (cdr (assoc :cmdline params)))
+	 (in-file (org-babel-temp-file "plantuml-"))
+	 (cmd (concat "docker run --rm -i authsec/sphinx /usr/bin/plantuml"
+		      (if (string= (file-name-extension out-file) "svg")
+			  " -tsvg" "")
+		      (if (string= (file-name-extension out-file) "eps")
+			  " -teps" "")
+		      " -p " cmdline " < "
+		      (org-babel-process-file-name in-file)
+		      " > "
+		      (org-babel-process-file-name out-file))))
+    (with-temp-file in-file (insert (concat "@startuml\n" body "\n@enduml")))
+    (message "%s" cmd) (org-babel-eval cmd "")
+    nil))
+(add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
