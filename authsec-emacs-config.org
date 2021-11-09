@@ -98,6 +98,14 @@
      (global-visual-line-mode t)
    #+end_src
    
+** Highlight Current Line
+
+   This enables the current line to be highlighted.
+
+   #+begin_src emacs-lisp
+     (global-hl-line-mode t)
+   #+end_src
+   
 ** Recent Files
    Emacs can remember recently opened files. After configuring this, you can open recent files with =C-x C-r=.
 
