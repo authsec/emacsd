@@ -308,7 +308,7 @@ If the new path's directories does not exist, create them."
 
 (setq org-latex-pdf-process
       (list
-       "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -C -bibtex && rm -f %b.run.xml %b.tex'"
+       "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -c -bibtex && rm -rf %b.run.xml %b.tex %b.bbl _minted-*'"
        ))
 
 (setq org-latex-listings 'minted
