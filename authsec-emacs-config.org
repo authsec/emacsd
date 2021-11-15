@@ -1,6 +1,6 @@
 #+title: Authsec Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ./initl.el :mkdirp yes
-#+latex_class: memoir-book
+#+Latex_class: koma-report
 
 * Introduction
 
@@ -65,7 +65,7 @@
 
     ;; Setup a font
     (set-face-attribute 'default nil :font "PragmataPro" :height 180)
-#+end_src
+  #+end_src
 
 ** Move Backup Files
    Let emacs create backups in a specific directory, mirroring the same folder structure as the original.
@@ -597,6 +597,27 @@
     You can also enable attachment versioning as shown [[https://orgmode.org/manual/Automatic-version_002dcontrol-with-Git.html][here]].
     
     
+*** TODO Org Roam Capture Templates
+
+    When creating posts or documents in general it is (at least in my case) most of the time helpful to save attachements in the same directory where the document lives. If you for example take a screenshot for a note you want that saved in the same directory.
+
+    The following snipped changes the default template to create a folder with the same name as the file without the =.org= extension. This helps in storing attachemts/resources with the document.
+
+    It additionaly defines a `work` template, that will store the document in a different folder.
+
+    #+begin_src emacs-lisp :tangle no
+      (setq org-roam-capture-templates
+	    '(
+	      ("d" "default" plain "%?"
+	       :target (file+head "%<%Y%m%d%H%M%S>-${slug}/%<%Y%m%d%H%M%S>-${slug}.org"
+				  "#+title: ${title}\n") :unnarrowed t)
+	      ("w" "work" plain "%?"
+	       :target (file+head "work/%<%Y%m%d%H%M%S>-${slug}/%<%Y%m%d%H%M%S>-${slug}.org"
+				  "#+title: ${title}\n") :unnarrowed t)
+	      )
+	    )
+    #+end_src
+    
 ** Org Ref
 
    =org-ref= helps to manage and insert citations in =org-mode=.
@@ -635,6 +656,64 @@
      (require 'org-attach-screenshot)
    #+end_src
    
+** OX Hugo
+
+   Export backend for [[https://gohugo.io/][Hugo]] compatible markdown. Allows you to export your =.org= files to a nicely formatted blog.
+
+   The following configuration sets up the required packages.
+
+   #+begin_src emacs-lisp
+     (use-package ox-hugo
+       :ensure t            ;Auto-install the package from Melpa (optional)
+       :after ox)
+   #+end_src
+
+   For the configuration file that we may want to edit later, [[https://melpa.org/#/toml-mode][toml-mode]] can be installed.
+
+   #+begin_src emacs-lisp 
+     (use-package toml-mode
+       :ensure t)
+  #+end_src
+  
+*** Site setup
+
+    =ox-hugo= will render the output into a [[https://gohugo.io/][Hugo]] compatible blog format. The following setup shows how a blog, based on the [[https://www.docsy.dev/][docsy]] theme can be configured. It is probably best to clone the [[https://github.com/google/docsy-example][example repository]] to get you started. You can e.g. clone it into a (free) repository on github.
+
+    *NOTE:* If you're cloning into a directory structure that is already under version control, you might want to add the base folder to the =.gitignore= file to avoid problems with git adding that subfolder.
+
+    The next thing you want to do is to get rid of the boilerplate that is present in the theme to help you get set up. Change and or remove things to your liking.
+
+    Finally check out your new repository in that export folder and don't forget to include =--recurse-submodules --depth 1= as you'll run into problems because some dependencies will be missing.
+
+    #+begin_src shell :results none
+      export HUGO_BASE_DIR=~/research/export/hugo
+      # Ensure base folder for checkout
+      mkdir -p ${HUGO_BASE_DIR}
+      # git subtree must run from the base directory
+      cd ${HUGO_BASE_DIR}
+      git clone --recurse-submodules --depth 1 https://github.com/authsec/dump.git
+      # Ensure you do have a /static directory
+      mkdir ${HUGO_BASE_DIR}/dump/static
+      #+end_src
+
+    Again [[https://www.docker.com/][Docker]] is used to run/export the site. We use the container from https://hub.docker.com/r/klakegg/hugo/ to export/run the server. You need an =ext= version of the docker container for the site to run. You can e.g. render the site from a command line with the following command:
+
+    #+begin_src shell :results no
+      docker run --rm -it -v $(pwd):/src -p1313:1313 klakegg/hugo:ext-alpine server
+    #+end_src
+
+*** Basic Post configuration
+
+    =ox-hugo= needs a few variables set in order for it to work. The most important however is the =hugo_base_dir= variable. It defines where the content root of the blog to render is.
+
+    You can define that variable with each blog/documentation entry, or you can set up a global value of the variable which comes in handy, should you ever want to change the location on your file system, where the blog content is rendered to.
+
+    You can set up a global location of the blog like this:
+       
+    #+begin_src emacs-lisp
+      (setq hugo-base-dir "~/research/export/hugo/dump")
+    #+end_src
+    
 * Deft
   =deft= is a full text search mode that allows you to quickly find your filter expression in a bunch of files.
 
@@ -689,7 +768,7 @@
   #+begin_src emacs-lisp
     (setq org-latex-pdf-process
 	  (list
-	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -C -bibtex && rm -f %b.run.xml %b.tex'"
+	   "docker run --rm -v $\(pwd\):/docs authsec/sphinx /bin/sh -c 'latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -c -bibtex && rm -rf %b.run.xml %b.tex %b.bbl _minted-*'"
 	   ))
   #+end_src
   
@@ -757,40 +836,40 @@
 			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
     #+end_src
 
-*** Memoir Article
-    This uses the memoir class as base.
+*** KOMA Report
+
+    This defines the KOMA scrreprt class and still allows for the previously defined packages to be present.
 
     #+begin_src emacs-lisp
       (eval-after-load 'ox-latex
 	'(add-to-list 'org-latex-classes
-		      '("memoir-article"
-			"\\documentclass[a4paper,10pt,article,oneside]{memoir}"
+		      '("koma-report"
+			"\\documentclass{scrreprt}"
 			("\\chapter{%s}" . "\\chapter*{%s}")
 			("\\section{%s}" . "\\section*{%s}")
-			("\\subsection{%s}" . "\\subsection*{%s}")       
+			("\\subsection{%s}" . "\\subsection*{%s}")
 			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
 			("\\paragraph{%s}" . "\\paragraph*{%s}")
-			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
-		      ))
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
     #+end_src
 
-*** Memoir Book
+*** KOMA Book
 
-    Use this to set a book.
+    This defines the KOMA scrbook class and still allows for the previously defined packages to be present.
 
     #+begin_src emacs-lisp
       (eval-after-load 'ox-latex
 	'(add-to-list 'org-latex-classes
-		      '("memoir-book"
-			"\\documentclass[a4paper,11pt,extrafontsizes,twoside]{memoir}"
+		      '("koma-book"
+			"\\documentclass{scrbook}"
 			("\\chapter{%s}" . "\\chapter*{%s}")
 			("\\section{%s}" . "\\section*{%s}")
-			("\\subsection{%s}" . "\\subsection*{%s}")       
+			("\\subsection{%s}" . "\\subsection*{%s}")
 			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
 			("\\paragraph{%s}" . "\\paragraph*{%s}")
-			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
-		      ))
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
     #+end_src
+
 * Git Integration
 
   If you might want to store your documents in a =git= repository you can use [[https://github.com/ryuslash/git-auto-commit-mode][Git Auto Commit Mode]] to automatically commit your document to a predefined git repository.
@@ -821,7 +900,7 @@
     docker run -d -p 8080:8080 plantuml/plantuml-server:jetty
   #+end_src
 
-  Now all you need to do is set up emacs with this configuration:
+  *NOTE* The above server approach however does not work. The configuration fragment you see below uses a docker container to generate the image "inside" the container instead of sending data towards the HTTP interface. It basically acts as a wrapped local version of the =plantuml= command.
 
   #+begin_src emacs-lisp
     (require 'ob-plantuml)
