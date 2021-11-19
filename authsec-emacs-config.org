@@ -605,7 +605,7 @@
 
     It additionaly defines a `work` template, that will store the document in a different folder.
 
-    #+begin_src emacs-lisp :tangle no
+    #+begin_src emacs-lisp
       (setq org-roam-capture-templates
 	    '(
 	      ("d" "default" plain "%?"
@@ -616,6 +616,28 @@
 				  "#+title: ${title}\n") :unnarrowed t)
 	      )
 	    )
+    #+end_src
+
+    With the above setup =org-roam= will complain that it cannot find the directory, as it was not yet created. The configuration below will automatically create any missing directories.
+
+    #+begin_src emacs-lisp
+      (defun authsec-create-missing-directories-h ()
+	"Automatically create missing directories when creating new files."
+	(unless (file-remote-p buffer-file-name)
+	  (let ((parent-directory (file-name-directory buffer-file-name)))
+	    (and (not (file-directory-p parent-directory))
+		 (y-or-n-p (format "Directory `%s' does not exist! Create it?"
+				   parent-directory))
+		 (progn (make-directory parent-directory 'parents)
+			t)))))
+      (add-hook 'find-file-not-found-functions #'authsec-create-missing-directories-h)
+
+      ;; This advice automatically answers 'yes' or rather 'y' for the above function and therefore always creates the directory and places the .org file created by org-roam inside that directory.
+      ;; The problem with the above approach however is that the directory gets created even if you later decide to abort your capture.
+      (defadvice authsec-create-missing-directories-h (around auto-confirm compile activate)
+	(cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest args) t))
+		  ((symbol-function 'y-or-n-p) (lambda (&rest args) t)))
+	  ad-do-it))
     #+end_src
     
 ** Org Ref
