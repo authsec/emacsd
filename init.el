@@ -265,6 +265,35 @@ If the new path's directories does not exist, create them."
   :config
   (require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
 
+(setq org-roam-capture-templates
+      '(
+	("d" "default" plain "%?"
+	 :target (file+head "%<%Y%m%d%H%M%S>-${slug}/%<%Y%m%d%H%M%S>-${slug}.org"
+			    "#+title: ${title}\n") :unnarrowed t)
+	("w" "work" plain "%?"
+	 :target (file+head "work/%<%Y%m%d%H%M%S>-${slug}/%<%Y%m%d%H%M%S>-${slug}.org"
+			    "#+title: ${title}\n") :unnarrowed t)
+	)
+      )
+
+(defun authsec-create-missing-directories-h ()
+  "Automatically create missing directories when creating new files."
+  (unless (file-remote-p buffer-file-name)
+    (let ((parent-directory (file-name-directory buffer-file-name)))
+      (and (not (file-directory-p parent-directory))
+	   (y-or-n-p (format "Directory `%s' does not exist! Create it?"
+			     parent-directory))
+	   (progn (make-directory parent-directory 'parents)
+		  t)))))
+(add-hook 'find-file-not-found-functions #'authsec-create-missing-directories-h)
+
+;; This advice automatically answers 'yes' or rather 'y' for the above function and therefore always creates the directory and places the .org file created by org-roam inside that directory.
+;; The problem with the above approach however is that the directory gets created even if you later decide to abort your capture.
+(defadvice authsec-create-missing-directories-h (around auto-confirm compile activate)
+  (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest args) t))
+	    ((symbol-function 'y-or-n-p) (lambda (&rest args) t)))
+    ad-do-it))
+
 (use-package org-ref
   :after org
   :init
