@@ -735,7 +735,7 @@
     You can set up a global location of the blog like this:
        
     #+begin_src emacs-lisp
-      (setq hugo-base-dir "~/research/export/hugo/dump")
+      (setq org-hugo-base-dir "~/research/export/hugo/dump")
     #+end_src
     
 * Deft
