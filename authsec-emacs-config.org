@@ -32,6 +32,8 @@
 
   #+begin_src shell
     cp -r /usr/local/opt/emacs-mac/Emacs.app /Applications/Emacs.app
+    # On macOS Monterey use the below command
+    # cp -r /opt/homebrew/opt/emacs-mac/Emacs.app /Applications/
   #+end_src
   
 
