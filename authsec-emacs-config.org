@@ -409,6 +409,7 @@
 	  (python . t)
 	  (shell . t)
 	  (sql . t)
+	  (latex . t)
 	  )
 	)
 
