@@ -441,6 +441,48 @@
       (setq org-babel-python-command "docker run --rm -i authsec/sphinx python3")
     #+end_src
     
+** Org Special Block Extras
+
+   [[https://github.com/alhassy/org-special-block-extras][This package]] allows the definition of custom blocks that transform a =#+begin_x= block into something useful after rendering it into the target language such as LaTeX or HTML.
+
+   #+begin_src emacs-lisp
+     (use-package org-special-block-extras
+       :ensure t
+       :after org
+       :hook (org-mode . org-special-block-extras-mode)
+       ;; All relevant Lisp functions are prefixed ‘o-’; e.g., `o-docs-insert'.
+
+       :config
+       (o-defblock noteblock (title "Note") (title-color "primary")
+		   "Define noteblock export for docsy ox hugo"
+		   (apply #'concat
+			  (pcase backend
+			    (`latex `("\\begin{noteblock}", contents, "\\end{noteblock}"))
+			    (`hugo `("{{% alert title=\"", title, "\" color=\"", title-color, "\" %}}\n", contents, "\n{{% /alert %}}"))
+			    )
+			  )
+		   )
+       (o-defblock cautionblock (title "Caution") (title-color "warning")
+		   "Awesomebox caution"
+		   (apply #'concat
+			  (pcase backend
+			    (`latex `("\\begin{cautionblock}", contents, "\\end{cautionblock}"))
+			    (`hugo `("{{% alert title=\"", title, "\" color=\"", title-color, "\" %}}\n", contents, "\n{{% /alert %}}"))
+			    )
+			  )
+		   )
+       )
+
+     ;; (defun ox-mybackend-special-block ( special-block contents info )
+     ;;   (let ((org-export-current-backend 'md))
+     ;;          (org-hugo-special-block special-block contents info)))
+
+     ;;      (advice-add 'org-hugo-special-block :around
+     ;;       (lambda (f &rest r)
+     ;; 	(let ((org-export-current-backend 'hugo))
+     ;; 	  (apply 'f r))))
+   #+end_src
+
 ** Org Tempo
    Using =org-tempo= will allow you to quickly create =begin_src..end_src= blocks with a shortcut syntax.
 
