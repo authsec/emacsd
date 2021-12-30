@@ -463,7 +463,7 @@
        :after org
        :hook (org-mode . org-bullets-mode))
    #+end_src
-
+   
 ** Org Agenda
 
    In order to track task and e.g. birthdays you can set up org-agenda. This [[https://www.youtube.com/watch?v=PNE-mgkZ6HM&t=5s][Youtube Video]] gives a good overview of the topic.
@@ -475,7 +475,7 @@
      (setq org-log-done 'time)
      (setq org-log-into-drawer t)
      (setq org-capture-templates
-	   '(("t" "Todo" entry (file+datetree "~/research/org/tasks.org")
+	   '(("t" "Todo" entry (file+olp+datetree "~/research/org/tasks.org")
 	      "* TODO %?\n  %i\n  %a")))
 
    #+end_src
