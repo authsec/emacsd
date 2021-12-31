@@ -1,0 +1,969 @@
+#+title: Authsec Emiac Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle ./init-emiac.el :mkdirp yes
+#+latex_class: koma-report
+
+* Introduction
+
+  This =.org= file contains my Emacs configuration for Emacs 27.2+. That is running in a docker container.
+
+  
+
+* Base Configuration
+
+  This is a minimal base configuration for Emacs. 
+
+  My variables
+  #+begin_src emacs-lisp
+    (setq emiac-home-dir "/home/emiac")
+  #+end_src
+
+  Configuration
+  #+begin_src emacs-lisp
+    (setq inhibit-startup-message t) ;Don't show the start screen
+    (setq inhibit-splash-screen t)
+    (setq inhibit-startup-message t)
+    (setq initial-scratch-message "")
+
+    (scroll-bar-mode -1) ; Disable the visible scrollbar
+    (tool-bar-mode -1)    ; Disable the toolbar
+    (tooltip-mode -1)    ; Disable tooltips
+    (set-fringe-mode 10) ; Give some breathing room
+
+    (menu-bar-mode -1)   ; Disable the menubar
+
+    (setq visible-bell t); Setup visible bell
+    (show-paren-mode 1)  ; Highlight matching brackets (or braces/parenthesis)
+
+    ;; Set up the key to the left of "end" to delete forward (might not be necessary if not running in a docker container on a Mac accessed through XQuartz)
+    (normal-erase-is-backspace-mode 1)
+
+    ;; Setup a font
+    (set-face-attribute 'default nil :font "Roboto Mono" :height 140)
+  #+end_src
+
+** Move Backup Files
+   Let emacs create backups in a specific directory, mirroring the same folder structure as the original.
+
+   #+begin_src emacs-lisp
+     ;; make backup to a designated dir, mirroring the full path
+
+     (defun my-backup-file-name (fpath)
+       "Return a new file path of a given file path.
+     If the new path's directories does not exist, create them."
+       (let* (
+	      (backupRootDir (concat emiac-home-dir "/.emacs.d/backup/"))
+	      (filePath (replace-regexp-in-string "[A-Za-z]:" "" fpath )) ; remove Windows driver letter in path, for example, “C:”
+	      (backupFilePath (replace-regexp-in-string "//" "/" (concat backupRootDir filePath "~") ))
+	      )
+	 (make-directory (file-name-directory backupFilePath) (file-name-directory backupFilePath))
+	 backupFilePath
+	 )
+       )
+
+     (setq make-backup-file-name-function 'my-backup-file-name)
+   #+end_src
+   
+   
+** Visual Line Mode
+
+   This mode allows long lines to be wrapped if they are too long to fit the current window. The mode can globally be enabled with =global-visual-line-mode= or =visual-line-mode= respectively:
+
+   #+begin_src emacs-lisp
+     (global-visual-line-mode t)
+   #+end_src
+   
+** Highlight Current Line
+
+   This enables the current line to be highlighted.
+
+   #+begin_src emacs-lisp
+     (global-hl-line-mode t)
+   #+end_src
+   
+** Recent Files
+   Emacs can remember recently opened files. After configuring this, you can open recent files with =C-x C-r=.
+
+   #+begin_src emacs-lisp
+     (recentf-mode 1)
+     (setq recentf-max-menu-items 25)
+     (setq recentf-max-saved-items 25)
+     (global-set-key "\C-x\ \C-r" 'recentf-open-files)
+   #+end_src
+   
+* Setup Package Management
+
+  Emacs can be extended with more packages. The packages can come from multiple sources, that we have to list in the =init.el= file.
+
+  #+begin_src emacs-lisp
+    ;; Initialize package source
+    (require 'package)
+
+    (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+			     ("elpa" . "https://elpa.gnu.org/packages/")
+			     ))
+
+    (package-initialize)
+    (unless package-archive-contents (package-refresh-contents))
+
+    ;; initialize use-package
+    (unless (package-installed-p 'use-package) (package-install 'use-package))
+
+    (require 'use-package)
+    (setq use-package-always-ensure t)
+
+  #+end_src
+
+* Theming
+
+  Emacs has a few basic built in themes, but allows you to package install new themes as well. You can see a few themes on [[https://peach-melpa.org/][Peach Melpa]].
+  
+  You can setup a basic theme with (not generated into the configuration):
+
+  #+begin_src emacs-lisp :tangle no
+    (load-theme 'wombat)
+  #+end_src
+
+** Doom Themes
+
+   [INACTIVE] These themes usually come with =doom-mode= but they do some
+   additional configuration for some of the specific modes.
+
+   The =doom-themes= will not be generated into the configuration, it is just for reference and needs to be enabled by removing =:tangle no= from the src block below.
+
+   #+begin_src emacs-lisp :tangle no
+     (use-package doom-themes)
+   #+end_src
+
+** Solarized
+
+   INACTIVE: Solarized Theme
+
+   #+begin_src emacs-lisp :tangle no
+     (use-package solarized-theme)
+     (load-theme 'solarized-light t)
+   #+end_src
+ 
+** NANO Theme
+
+   #+begin_src emacs-lisp
+     (use-package nano-theme)
+     (use-package nano-modeline)
+     (use-package nano-agenda)
+
+     ;; Load modeline after init, as this was causing problems if immediately loaded
+     (add-hook 'after-init-hook #'nano-modeline-mode)
+     (load-theme 'nano-light t)
+   #+end_src
+   
+** All The Icons
+
+   This provides a icons for the =doom-modeline=. They may already be installed, but just to make sure, set it up with:
+
+   #+begin_src emacs-lisp
+     (use-package all-the-icons
+       :if (display-graphic-p)
+       :commands all-the-icons-install-fonts
+       :init (unless (find-font (font-spec :name "all-the-icons"))
+	       (all-the-icons-install-fonts t)))
+     (use-package all-the-icons-dired
+       :if (display-graphic-p)
+       :hook (dired-mode . all-the-icons-dired-mode))
+
+   #+end_src
+  
+* Show Keybindings
+
+  At first you need to execute the function
+  =global-command-log-mode=. After that you can enable the command log
+  buffer with =clm/toggle-command-log-buffer= with =M-x=.
+
+  #+begin_src emacs-lisp
+    (use-package command-log-mode)
+  #+end_src
+
+* Setup a completion framework
+
+  There are =helm= and =ivy=.
+
+  We're setting up =ivy= in this example.
+
+  #+begin_src emacs-lisp
+    ;; Install sensible dependencies
+    (use-package swiper
+      :ensure t
+      )
+    (use-package counsel
+      :ensure t
+      :bind (("M-x" . counsel-M-x)
+	     ("C-x b" . counsel-ibuffer)
+	     ("C-x C-f" . counsel-find-file)
+	     :map minibuffer-local-map
+	     ("C-r" . 'counsel-minibuffer-history)
+	     )
+      )
+    (use-package ivy
+      :diminish
+      :bind (("C-s" . swiper)
+	     )
+      :config
+      (ivy-mode 1))
+  #+end_src
+
+** ivy-rich
+
+   This will give you the details of the commands when the show in a list.
+
+   #+begin_src emacs-lisp
+     (use-package ivy-rich
+       :init (ivy-rich-mode 1)
+       )
+   #+end_src
+  
+* Line Number
+
+  You can turn on line numbers like this:
+
+  #+begin_src emacs-lisp
+    ;; enable line numbering
+    (column-number-mode)
+    (global-display-line-numbers-mode t)
+
+    ;; Disable line numbers for selected modes
+    (dolist (mode '(org-mode-hook
+		    term-mode-hook
+		    eshell-mode-hook))
+      (add-hook mode (lambda () (display-line-numbers-mode 0)))
+      )
+  #+end_src
+  
+* Rainbow Delimiters
+
+  In order to better differentiate between the various brackets you can color them.
+
+  To enable for all programming modes, use the following
+  configuration, where =prog-mode=, the base mode for all programming
+  languages, is defined.
+
+  The colors of the brackets are dependent on the theme you are using.
+
+  #+begin_src emacs-lisp
+    (use-package rainbow-delimiters
+      :hook (prog-mode . rainbow-delimiters-mode))
+  #+end_src
+
+* Which Key
+
+  The which key package will show a panel popup when you start typing
+  a keybinding, so you can see which keys are available under that.
+
+  You can set up the delay until the popup should be shown with a variable.
+
+  #+begin_src emacs-lisp
+    (use-package which-key
+      :init (which-key-mode)
+      :diminish which-key-mode
+      :config
+      (setq which-key-idle-delay 0.3)
+      )
+  #+end_src
+  
+* Read-Only Buffers 
+
+  You can make a buffer read-only using =C-x C-q=. This is especially good to know if you accidentally hit a key combination and you can no longer type in your buffer.
+
+* General.el
+
+  [[https://github.com/noctuid/general.el][This package]] allows you to conveniently bind keys in emacs. With this you can create a new global command prefix for your own commands.
+
+  You are tring to override an already existing keybinding if you e.g. run into an error like the one shown below. In this case you can either force general to bind the definition or fallback to the key command after a timeout. You can find more information [[https://github.com/noctuid/general.el/blob/master/README.org#how-do-i-prevent-key-sequence-starts-with-non-prefix-key-errors][on general github]]. 
+  
+  #+begin_example
+  (error "Key sequence C-SPC a starts with non-prefix key C-...")
+  #+end_example
+
+  Binding Control-Alt-Command-Space as the leader key can be done with the following setup.
+
+  #+begin_src emacs-lisp
+    (use-package general
+      :config
+      (general-create-definer authsec/leader-key
+	:prefix "A-C-M-SPC"
+	)
+      )
+
+    (authsec/leader-key
+      "b" 'counsel-bookmark
+      "s" 'org-attach-screenshot
+      )
+  #+end_src
+
+* Hydra
+
+  Hydra allow to set up transient, temporary, keybindings. An example would be to zoom in and out of text with just a single key once you have reached the "sub-menu" with the prefix key chords.
+
+  A simple text zoom example (that you can also reach by default with =C-x C-0=) can be set up like this (not rendered into configuration):
+
+  #+begin_src emacs-lisp :tangle no
+    (use-package hydra)
+    (defhydra hydra-scale-text (:timeout 4)
+      "zoom text"
+      ("j" text-scale-increase "in")
+      ("k" text-scale-decrease "out")
+      ("f" nil "finish" :exit t)
+      )
+
+    ;; Bind into my keyspace
+    (authsec/leader-key
+      "ts" '(hydra-scale-text/body :which-key "zoom text"))
+  #+end_src
+
+* Magit
+
+  This is a Emacs frontend for =git= and can be set up with:
+
+  #+begin_src emacs-lisp
+    (use-package magit
+      :commands (magit-status magit-get-current-branch)
+      :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+  #+end_src
+
+* Docker support
+  We install =dockerfile-mode= to support docker files.
+
+  #+begin_src emacs-lisp
+    (use-package dockerfile-mode)
+    (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
+  #+end_src
+
+* Org Mode
+
+  Org Mode comes with Emacs, you can however get the latest version from Org ELPA.
+
+  You can make sure the new version is installed with: =M-x org-version=
+
+  - =org-ellipsis= replaces the '...' characters after a heading when it is folded with the supplied one. The symbol is coming from the =PragmataPro= font, which may not be installed on your system or the site you're viewing this on.
+  
+  #+begin_src emacs-lisp
+    (setq org-display-inline-images t)
+    (setq org-redisplay-inline-images t)
+    (setq org-startup-with-inline-images "inlineimages")
+    (use-package org
+      :custom
+      (org-ellipsis " ⮷")
+      :bind(
+	    ("C-c a" . org-agenda)
+	    ("C-c c" . org-capture)
+	    ("C-c l" . org-store-link)
+	    )
+      )
+    ;; Store new notes at the beginning of the file
+    (setq org-reverse-note-order t)
+  #+end_src
+  
+** Configure Babel Languages
+
+   To execute or export code in =org-mode= code blocks, you'll need to
+   set up =org-babel-load-languages= for each language you'd like to
+   use.  [[https://orgmode.org/worg/org-contrib/babel/languages.html][This page]] documents all of the languages that you can use with
+   =org-babel=.
+
+   #+begin_src emacs-lisp
+     (with-eval-after-load 'org
+       (org-babel-do-load-languages
+	'org-babel-load-languages
+	'(
+	  (dot . t)
+	  (emacs-lisp . t)
+	  (plantuml . t)
+	  (python . t)
+	  (shell . t)
+	  (sql . t)
+	  (latex . t)
+	  )
+	)
+
+       (push '("conf-unix" . conf-unix) org-src-lang-modes))
+     #+end_src
+
+*** Run Codeblocks without confirmation
+    To run =org-babel= block with =C-c C-c= without having to type `yes` everytime you do that, you can set:
+
+    #+begin_src emacs-lisp
+      (setq org-confirm-babel-evaluate nil)
+    #+end_src
+
+    You can also configure babel to run automatically for certain languages only. To implement this, you need to define a function such as:
+
+    #+begin_src emacs-lisp :tangle no
+      (defun ck/org-confirm-babel-evaluate (lang body)
+	(not (or (string= lang "latex") (string= lang "maxima"))))
+      (setq org-confirm-babel-evaluate 'ck/org-confirm-babel-evaluate)
+    #+end_src
+
+    As described in [[https://emacs.stackexchange.com/questions/2945/org-babel-eval-with-no-confirmation-is-explicit-eval-yes][this stackoverflow post]].
+    
+*** Run python code blocks (in a docker container)
+
+    We  use python3 here, so we set that up to be used INSIDE the container.
+    
+    #+begin_src emacs-lisp
+      (setq org-babel-python-command "/usr/bin/python3")
+    #+end_src
+    
+    [INACTIVE] You can run however also run your org-babel =python= code blocks in a docker container by setting the python command like so (however this does not make too much sense when in use with emiac):
+
+    #+begin_src emacs-lisp :tangle no
+      (setq org-babel-python-command "docker run --rm -i authsec/sphinx python3")
+    #+end_src
+** Org Special Block Extras
+
+   [[https://github.com/alhassy/org-special-block-extras][This package]] allows the definition of custom blocks that transform a =#+begin_x= block into something useful after rendering it into the target language such as LaTeX or HTML.
+
+   #+begin_src emacs-lisp
+     (use-package org-special-block-extras
+       :ensure t
+       :after org
+       :hook (org-mode . org-special-block-extras-mode)
+       ;; All relevant Lisp functions are prefixed ‘o-’; e.g., `o-docs-insert'.
+
+       :config
+       (o-defblock noteblock (title "Note") (title-color "primary")
+		   "Define noteblock export for docsy ox hugo"
+		   (apply #'concat
+			  (pcase backend
+			    (`latex `("\\begin{noteblock}", contents, "\\end{noteblock}"))
+			    (`hugo `("{{% alert title=\"", title, "\" color=\"", title-color, "\" %}}\n", contents, "\n{{% /alert %}}"))
+			    )
+			  )
+		   )
+       (o-defblock cautionblock (title "Caution") (title-color "warning")
+		   "Awesomebox caution"
+		   (apply #'concat
+			  (pcase backend
+			    (`latex `("\\begin{cautionblock}", contents, "\\end{cautionblock}"))
+			    (`hugo `("{{% alert title=\"", title, "\" color=\"", title-color, "\" %}}\n", contents, "\n{{% /alert %}}"))
+			    )
+			  )
+		   )
+       )
+
+     ;; (defun ox-mybackend-special-block ( special-block contents info )
+     ;;   (let ((org-export-current-backend 'md))
+     ;;          (org-hugo-special-block special-block contents info)))
+
+     ;;      (advice-add 'org-hugo-special-block :around
+     ;;       (lambda (f &rest r)
+     ;; 	(let ((org-export-current-backend 'hugo))
+     ;; 	  (apply 'f r))))
+		   #+end_src
+    
+
+** Org Tempo
+   Using =org-tempo= will allow you to quickly create =begin_src..end_src= blocks with a shortcut syntax.
+
+   Using the below setup for example you'd type =<el= and it would render an =emacs-lisp= src block.
+
+   #+begin_src emacs-lisp
+     (require 'org-tempo)
+     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+     (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+     (add-to-list 'org-structure-template-alist '("py" . "src python"))
+     (add-to-list 'org-structure-template-alist '("java" . "src java"))
+   #+end_src
+
+** Org-Bullets
+
+   This package customizes the leading bullets to look a bit nicer.
+
+   #+begin_src emacs-lisp
+     (use-package org-bullets
+       :after org
+       :hook (org-mode . org-bullets-mode))
+   #+end_src
+
+** Org Agenda
+
+   In order to track task and e.g. birthdays you can set up org-agenda. This [[https://www.youtube.com/watch?v=PNE-mgkZ6HM&t=5s][Youtube Video]] gives a good overview of the topic.
+
+   #+begin_src emacs-lisp
+     (setq org-agenda-files
+	   '("~/research/org/tasks.org"))
+     (setq org-agenda-start-with-log-mode t)
+     (setq org-log-done 'time)
+     (setq org-log-into-drawer t)
+     (setq org-capture-templates
+	   '(("t" "Todo" entry (file+olp+datetree "~/research/org/tasks.org")
+	      "* TODO %?\n  %i\n  %a")))
+
+   #+end_src
+
+*** Keywords for TODO states
+
+    You can set up additional states for your tasks by setting up more todo keywords.
+   
+    #+begin_src emacs-lisp
+      (setq org-todo-keywords
+	    '(
+	      (sequence "TODO(t)" "NEXT(n)" "DAILY(a)" "|" "DONE(d)")
+	      (sequence "CONTACT(c)" "WAITING_FOR_RESPONSE(w)" "|" "DONE(d)")
+	      )
+
+	    )
+    #+end_src
+
+*** Global Tags
+
+    If you want to use a global tag list, you can configure one like so:
+    
+    #+begin_src emacs-lisp
+      (setq org-tag-alist
+	    '((:startgroup)
+	      ;; Put mutually exclusive tags here
+	      (:endgroup)
+	      ("email" . ?e)
+	      ("phone" . ?p)
+	      ("message" . ?m)
+	      )
+	    )
+    #+end_src
+
+    You can append any of these tags by pressing =C-c C-q= on the line with the TODO item.
+
+**** Project specific tags
+     If you do need to set up tags that are required for a specific project, or if you you do want a mechanism where you can append additional tags e.g. at work only, you can use [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Directory-Variables.html][Per-Directory Local Variables]].
+
+     To do that, you simply put a file named =.dir-locals.el= in the directory where you hold your =tasks.org= file. The file can look something like this:
+
+     #+begin_src emacs-lisp :tangle no
+       ;; NOT WORKING YET
+       (add-to-list 'org-tag-alist
+
+		    '(
+		      ("myspecial" . ?M)
+		      ("work" . ?w)
+		      )
+
+		    )
+     #+end_src
+    
+   
+** Org Links
+
+   Add additional links to be understood by org-mode.
+   
+   
+*** DEVONthink
+    This configuration enables clickable links to =x-devonthink-item://= links, which will open in DEVONthink.
+
+    #+begin_src emacs-lisp
+      (org-add-link-type "x-devonthink-item" 'org-devonthink-item-open)
+      (defun org-devonthink-item-open (uid)
+	"Open the given uid, which is a reference to an item in Devonthink"
+	(shell-command (concat "open \"x-devonthink-item:" uid "\"")))
+    #+end_src
+    
+** Org Roam
+   =org-roam= aids building a second brain. It basically a implementation of the Zettelkasten note-taking strategy. This allows you to see connections between different notes, that you may not have seen before.
+
+   #+begin_src emacs-lisp
+     (setq my-roam-directory (concat (getenv "HOME") "/research/roam-notes"))
+     (setq org-roam-v2-ack t)
+     (use-package org-roam
+       :ensure t
+       :custom
+       ;; make sure this directory exists
+       (org-roam-directory (file-truename my-roam-directory))
+       ;; configure the folder where dailies are stored, make sure this exists as well
+       (org-roam-dailies-directory "dailies")
+       ;; Lets you use completion-at-point
+       (org-roam-completion-everywhere t)
+       ;; (org-roam-graph-executable "~/bin/dot")
+       :bind(
+	     ("C-c n l" . org-roam-buffer-toggle)
+	     ("C-c n f" . org-roam-node-find)
+	     ("C-c n i" . org-roam-node-insert)
+	     :map org-mode-map
+	     ("C-M-i" . completion-at-point)
+	     :map org-roam-dailies-map
+	     ("Y" . org-roam-dailies-capture-yesterday)
+	     ("T" . org-roam-dailies-capture-tomorrow)
+	     )
+       :bind-keymap
+       ("C-c n d" . org-roam-dailies-map)
+       :config
+       (require 'org-roam-dailies) ;; Ensure keymap is available
+       (org-roam-setup)
+       (org-roam-db-autosync-mode)
+       )
+     ;; Mapping mouse click to preview does not seem to work
+     ;;(define-key org-roam-mode-map [mouse-1] #'org-roam-preview-visit)
+   #+end_src
+   
+*** Org Roam BibTeX
+    [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] is integrating roam bibtex and org-ref .
+
+    #+begin_src emacs-lisp
+      (use-package org-roam-bibtex
+	:after org-roam
+	:hook (org-roam-mode . org-roam-bibtex-mode)
+	:config
+	(require 'org-ref)) ; optional: if Org Ref is not loaded anywhere else, load it here
+    #+end_src
+    
+   
+*** Org File Versioning
+    This lets you version your roam notes.
+
+    You can also enable attachment versioning as shown [[https://orgmode.org/manual/Automatic-version_002dcontrol-with-Git.html][here]].
+    
+    
+*** TODO Org Roam Capture Templates
+
+    When creating posts or documents in general it is (at least in my case) most of the time helpful to save attachements in the same directory where the document lives. If you for example take a screenshot for a note you want that saved in the same directory.
+
+    The following snipped changes the default template to create a folder with the same name as the file without the =.org= extension. This helps in storing attachemts/resources with the document.
+
+    It additionaly defines a `work` template, that will store the document in a different folder.
+
+    #+begin_src emacs-lisp
+      (setq org-roam-capture-templates
+	    '(
+	      ("d" "default" plain "%?"
+	       :target (file+head "%<%Y%m%d%H%M%S>-${slug}/%<%Y%m%d%H%M%S>-${slug}.org"
+				  "#+title: ${title}\n") :unnarrowed t)
+	      ("w" "work" plain "%?"
+	       :target (file+head "work/%<%Y%m%d%H%M%S>-${slug}/%<%Y%m%d%H%M%S>-${slug}.org"
+				  "#+title: ${title}\n") :unnarrowed t)
+	      )
+	    )
+    #+end_src
+
+    With the above setup =org-roam= will complain that it cannot find the directory, as it was not yet created. The configuration below will automatically create any missing directories.
+
+    #+begin_src emacs-lisp
+      (defun authsec-create-missing-directories-h ()
+	"Automatically create missing directories when creating new files."
+	(unless (file-remote-p buffer-file-name)
+	  (let ((parent-directory (file-name-directory buffer-file-name)))
+	    (and (not (file-directory-p parent-directory))
+		 (y-or-n-p (format "Directory `%s' does not exist! Create it?"
+				   parent-directory))
+		 (progn (make-directory parent-directory 'parents)
+			t)))))
+      (add-hook 'find-file-not-found-functions #'authsec-create-missing-directories-h)
+
+      ;; This advice automatically answers 'yes' or rather 'y' for the above function and therefore always creates the directory and places the .org file created by org-roam inside that directory.
+      ;; The problem with the above approach however is that the directory gets created even if you later decide to abort your capture.
+      (defadvice authsec-create-missing-directories-h (around auto-confirm compile activate)
+	(cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest args) t))
+		  ((symbol-function 'y-or-n-p) (lambda (&rest args) t)))
+	  ad-do-it))
+    #+end_src
+    
+** Org Ref
+
+   [INACTIVE] This setup now uses built in org-cite from org 9.5 from the =oc.el= library.
+
+   =org-ref= helps to manage and insert citations in =org-mode=.
+      
+   #+begin_src emacs-lisp :tangle no
+     (use-package org-ref
+       :after org
+       :init
+       (setq org-ref-completion-library 'org-ref-ivy-cite)
+       :bind (
+	      ;; Allows you to create a bibtex entry from a URL like a https:// link
+	      ("C-c b i" . org-ref-url-html-to-bibtex)
+	      )
+       :config
+       (setq reftex-default-bibliography '("~/research/bibliography/references.bib"))
+       (setq org-ref-bibliography-notes "~/research/bibliography/notes.org")
+       (setq org-ref-default-bibliography '("~/research/bibliography/references.bib"))
+       (setq org-ref-pdf-directory "~/research/bibliography/bibtex-pdfs/")
+       :demand t ;; Demand loading, so links work immediately
+       )
+
+   #+end_src
+   
+** OX Hugo
+
+   Export backend for [[https://gohugo.io/][Hugo]] compatible markdown. Allows you to export your =.org= files to a nicely formatted blog.
+
+   The following configuration sets up the required packages.
+
+   #+begin_src emacs-lisp
+     (use-package ox-hugo
+       :ensure t            ;Auto-install the package from Melpa (optional)
+       :after ox)
+   #+end_src
+
+   For the configuration file that we may want to edit later, [[https://melpa.org/#/toml-mode][toml-mode]] can be installed.
+
+   #+begin_src emacs-lisp 
+     (use-package toml-mode
+       :ensure t)
+   #+end_src
+  
+*** Site setup
+
+    =ox-hugo= will render the output into a [[https://gohugo.io/][Hugo]] compatible blog format. The following setup shows how a blog, based on the [[https://www.docsy.dev/][docsy]] theme can be configured. It is probably best to clone the [[https://github.com/google/docsy-example][example repository]] to get you started. You can e.g. clone it into a (free) repository on github.
+
+    *NOTE:* If you're cloning into a directory structure that is already under version control, you might want to add the base folder to the =.gitignore= file to avoid problems with git adding that subfolder.
+
+    The next thing you want to do is to get rid of the boilerplate that is present in the theme to help you get set up. Change and or remove things to your liking.
+
+    Finally check out your new repository in that export folder and don't forget to include =--recurse-submodules --depth 1= as you'll run into problems because some dependencies will be missing.
+
+    #+begin_src shell :results none
+      export HUGO_BASE_DIR=~/research/export/hugo
+      # Ensure base folder for checkout
+      mkdir -p ${HUGO_BASE_DIR}
+      # git subtree must run from the base directory
+      cd ${HUGO_BASE_DIR}
+      git clone --recurse-submodules --depth 1 https://github.com/authsec/dump.git
+      # Ensure you do have a /static directory
+      mkdir ${HUGO_BASE_DIR}/dump/static
+    #+end_src
+
+    Again [[https://www.docker.com/][Docker]] is used to run/export the site (however outside the emiac container!). We use the container from https://hub.docker.com/r/klakegg/hugo/ to export/run the server. You need an =ext= version of the docker container for the site to run. You can e.g. render the site from a command line with the following command:
+
+    #+begin_src shell :results no
+      docker run --rm -it -v $(pwd):/src -p1313:1313 klakegg/hugo:ext-alpine server
+    #+end_src
+
+*** Basic Post configuration
+
+    =ox-hugo= needs a few variables set in order for it to work. The most important however is the =hugo_base_dir= variable. It defines where the content root of the blog to render is.
+
+    You can define that variable with each blog/documentation entry, or you can set up a global value of the variable which comes in handy, should you ever want to change the location on your file system, where the blog content is rendered to.
+
+    You can set up a global location of the blog like this:
+       
+    #+begin_src emacs-lisp
+      (setq hugo-base-dir "~/research/export/hugo/dump")
+    #+end_src
+    
+* Deft
+  =deft= is a full text search mode that allows you to quickly find your filter expression in a bunch of files.
+
+  You can configure it with:
+
+  #+begin_src emacs-lisp
+    (use-package deft
+      :config
+      (setq deft-directory my-roam-directory
+	    deft-recursive t
+	    deft-strip-summary-regexp ":PROPERTIES:\n\\(.+\n\\)+:END:\n"
+	    deft-use-filename-as-title t)
+      :bind
+      ("C-c n s" . deft))
+  #+end_src
+  
+* LaTeX Setup
+
+  *NOTE:* If you are using this on a Mac with Docker Desktop, make sure that you have `Use gRPC FUSE for file sharing` enabled in the `General` category. If you don't do this, =docker= gets stuck and starts to hang while building if you changed the source file inbetween two invocations of the =docker run= command. Restarting the docker engine is the only thing that helps to resolve the issue in that case. Of course this may be a bug that has been fixed by the time you read this too.
+
+  Using LaTeX with emiac is easy, as it sits on top of [[https://github.com/authsec/sphinx][authsec/sphinx]], it already inherits all the tools required to build a nice looking LaTeX document.
+    
+  So the compile process here uses =latexmk= directly now.
+  
+  #+begin_src emacs-lisp
+    (setq org-latex-pdf-process
+	  (list
+	   "latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -c -bibtex && rm -rf %b.run.xml %b.tex %b.bbl _minted-*"
+	   ))
+  #+end_src
+  
+** Source Code Blocks
+   To display nice source code blocks you can use the package =minted= which can be set up like this:
+
+   #+begin_src emacs-lisp
+     (setq org-latex-listings 'minted
+	   org-latex-packages-alist '(("" "minted"))
+	   org-latex-minted-options '(("breaklines" "true")
+				      ("breakanywhere" "true"))
+	   )
+   #+end_src
+
+** BibTeX
+   Add BibTeX setup for latex.
+   
+   #+begin_src emacs-lisp
+     (use-package ivy-bibtex)
+
+     ;; use the newer biblatex
+     (add-to-list 'org-latex-packages-alist '("backend=biber,sortlocale=de" "biblatex"))
+   #+end_src
+
+   
+   #+begin_src emacs-lisp
+     ;;setup dialect to be biblatex as bibtex is quite a bit old
+     (setq bibtex-dialect 'biblatex)
+     ;; variables that control bibtex key format for auto-generation
+     ;; I want firstauthor-year-title-words
+     ;; this usually makes a legitimate filename to store pdfs under.
+     (setq bibtex-autokey-year-length 4
+	   bibtex-autokey-name-year-separator "-"
+	   bibtex-autokey-year-title-separator "-"
+	   bibtex-autokey-titleword-separator "-"
+	   bibtex-autokey-titlewords 2
+	   bibtex-autokey-titlewords-stretch 1
+	   bibtex-autokey-titleword-length 5)
+   #+end_src
+
+** New LaTeX Classes
+
+   If you want to export with a different LaTeX template, you can do this
+
+   #+begin_src emacs-lisp
+     (require 'ox-latex)
+     (unless (boundp 'org-latex-classes)
+       (setq org-latex-classes nil))
+   #+end_src
+
+   
+*** KOMA Article
+
+    This defines the KOMA scrartcl class and still allows for the previously defined packages to be present.
+
+    #+begin_src emacs-lisp
+      (eval-after-load 'ox-latex
+	'(add-to-list 'org-latex-classes
+		      '("koma-article"
+			"\\documentclass{scrartcl}"
+			("\\section{%s}" . "\\section*{%s}")
+			("\\subsection{%s}" . "\\subsection*{%s}")
+			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+			("\\paragraph{%s}" . "\\paragraph*{%s}")
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+    #+end_src
+
+*** KOMA Report
+
+    This defines the KOMA scrreprt class and still allows for the previously defined packages to be present.
+
+    #+begin_src emacs-lisp
+      (eval-after-load 'ox-latex
+	'(add-to-list 'org-latex-classes
+		      '("koma-report"
+			"\\documentclass{scrreprt}"
+			("\\chapter{%s}" . "\\chapter*{%s}")
+			("\\section{%s}" . "\\section*{%s}")
+			("\\subsection{%s}" . "\\subsection*{%s}")
+			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+			("\\paragraph{%s}" . "\\paragraph*{%s}")
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+    #+end_src
+
+*** KOMA Book
+
+    This defines the KOMA scrbook class and still allows for the previously defined packages to be present.
+
+    #+begin_src emacs-lisp
+      (eval-after-load 'ox-latex
+	'(add-to-list 'org-latex-classes
+		      '("koma-book"
+			"\\documentclass{scrbook}"
+			("\\chapter{%s}" . "\\chapter*{%s}")
+			("\\section{%s}" . "\\section*{%s}")
+			("\\subsection{%s}" . "\\subsection*{%s}")
+			("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+			("\\paragraph{%s}" . "\\paragraph*{%s}")
+			("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+    #+end_src
+
+** pdf-tools
+
+   Install =pdf-tools= for better PDF handling. This needs the following tools installed in order to work.
+
+   #+begin_src shell
+     apt install -y autoconf automake g++ gcc libpng-dev libpoppler-dev libpoppler-glib-dev libpoppler-private-dev libz-dev make pkg-config
+   #+end_src
+   
+   #+begin_src emacs-lisp
+     (use-package pdf-tools
+       :config
+       (pdf-tools-install t)
+       )
+
+     ;; Don't open .pdf files with an external viewer
+     (push '("\\.pdf\\'" . emacs) org-file-apps)
+     ;; Don't ask if the PDF buffer should be replace with the newly created PDF
+     (setq revert-without-query '(".pdf"))
+   #+end_src
+
+* Git Integration
+
+  If you might want to store your documents in a =git= repository you can use [[https://github.com/ryuslash/git-auto-commit-mode][Git Auto Commit Mode]] to automatically commit your document to a predefined git repository. This is best put into a =.dir-locals.el= file, as shown in the next section.
+
+  #+begin_src emacs-lisp
+    (use-package git-auto-commit-mode)
+    ;;(setq gac-automatically-push-p t)
+    ;;(setq gac-automatically-add-new-files-p t)
+    ;; Commit/Push every 5 minutes
+    ;;(setq gac-debounce-interval 300)
+    (custom-set-variables
+     '(safe-local-variable-values '((setq gac-debounce-interval 300)))
+     )
+  #+end_src
+  
+** Enable directory  for auto-commit
+
+   In order for this to work, you need to enable auto commit on a directory basis.
+
+   In my case the files reside under the =~/research= directory. So place a =.dir-locals.el= variable there (which also can be commited to the repository if not excluded) with the following content:
+
+   #+begin_src emacs-lisp :tangle no
+     (
+      (nil . (
+	      (setq gac-automatically-push-p t)
+	      (setq gac-automatically-add-new-files-p t)
+	      ;; Commit/Push every 5 minutes
+	      (setq gac-debounce-interval 300)
+	      (eval git-auto-commit-mode 1)
+	      )
+	   )
+      )
+   #+end_src
+
+* Plantuml
+
+  The =plantuml.jar= file can be pointed to the local install easily with
+  
+  #+begin_src emacs-lisp
+    (require 'ob-plantuml)
+    (setq org-plantuml-jar-path "/usr/local/plantuml/plantuml.jar")
+    (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
+  #+end_src
+
+  After this you can use plantuml like:
+
+  (<hit C-c ' to open plantuml buffer> or type source code inside the block)
+  
+  #+begin_src plantuml :file output.png
+    skinparam backgroundcolor transparent
+    Peter -> World: Hello World!
+    World --> Peter: Hello Peter!
+  #+end_src
+
+  #+RESULTS:
+  [[file:output.png]]
+
+  #+begin_src plantuml :file gantt.png
+    @startgantt
+    skinparam backgroundcolor transparent
+
+    [Prototype design] lasts 15 days
+    [Test prototype] lasts 10 days
+    -- All example --
+    [Task 1 (1 day)] lasts 1 day
+    [T2 (5 days)] lasts 5 days
+    [T3 (1 week)] lasts 1 week
+    [T4 (1 week and 4 days)] lasts 1 week and 4 days
+    [T5 (2 weeks)] lasts 2 weeks
+    @endgantt
+  #+end_src
+
+  #+RESULTS:
+  [[file:gantt.png]]
+
