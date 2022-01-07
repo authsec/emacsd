@@ -6,8 +6,6 @@
 
   This =.org= file contains my Emacs configuration for Emacs 27.2+. That is running in a docker container.
 
-  
-
 * Base Configuration
 
   This is a minimal base configuration for Emacs. 
@@ -38,7 +36,7 @@
     (normal-erase-is-backspace-mode 1)
 
     ;; Setup a font
-    (set-face-attribute 'default nil :font "Roboto Mono" :height 140)
+    (set-face-attribute 'default nil :font "Roboto Mono" :height 120)
   #+end_src
 
 ** Move Backup Files
@@ -154,6 +152,108 @@
      (add-hook 'after-init-hook #'nano-modeline-mode)
      (load-theme 'nano-light t)
    #+end_src
+
+*** svg-tag-mode
+
+    This package gives you nice looking svg-tags. The font size issue should be fixed once =svg-lib= is updated: https://github.com/rougier/svg-tag-mode/issues/18#issuecomment-1005614535
+
+    #+begin_src emacs-lisp
+      (use-package svg-tag-mode
+	:hook org-mode
+	:config
+	(require 'svg-tag-mode)
+
+	(defconst date-re "[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")
+	(defconst time-re "[0-9]\\{2\\}:[0-9]\\{2\\}")
+	(defconst day-re "[A-Za-z]\\{3\\}")
+
+	(defun svg-progress-percent (value)
+	  (svg-image (svg-lib-concat
+		      (svg-lib-progress-bar (/ (string-to-number value) 100.0)
+					    nil :margin 0 :stroke 2 :radius 3 :padding 2 :width 11)
+		      (svg-lib-tag (concat value "%")
+				   nil :stroke 0 :margin 0)) :ascent 'center))
+
+	(defun svg-progress-count (value)
+	  (let* ((seq (mapcar #'string-to-number (split-string value "/")))
+		 (count (float (car seq)))
+		 (total (float (cadr seq))))
+	    (svg-image (svg-lib-concat
+			(svg-lib-progress-bar (/ count total) nil
+					      :margin 0 :stroke 2 :radius 3 :padding 2 :width 11)
+			(svg-lib-tag value nil
+				     :stroke 0 :margin 0)) :ascent 'center)))
+
+	(setq svg-tag-tags
+	      `(
+		;; Org tags
+		(":\\([A-Za-z0-9]+\\)" . ((lambda (tag) (svg-tag-make tag))))
+		(":\\([A-Za-z0-9]+[ \-]\\)" . ((lambda (tag) tag)))
+          
+		;; Task priority
+		("\\[#[A-Z]\\]" . ( (lambda (tag)
+				      (svg-tag-make tag :face 'org-priority 
+						    :beg 2 :end -1 :margin 0))))
+
+		;; Progress
+		("\\(\\[[0-9]\\{1,3\\}%\\]\\)" . ((lambda (tag)
+						    (svg-progress-percent (substring tag 1 -2)))))
+		("\\(\\[[0-9]+/[0-9]+\\]\\)" . ((lambda (tag)
+						  (svg-progress-count (substring tag 1 -1)))))
+          
+		;; TODO / DONE
+		("TODO" . ((lambda (tag) (svg-tag-make "TODO" :face 'org-todo :inverse t :margin 0 :scale 1))))
+		("DONE" . ((lambda (tag) (svg-tag-make "DONE" :face 'org-done :margin 0))))
+
+
+		;; Citation of the form [cite:@Knuth:1984] 
+		("\\(\\[cite:@[A-Za-z]+:\\)" . ((lambda (tag)
+						  (svg-tag-make tag
+								:inverse t
+								:beg 7 :end -1
+								:crop-right t))))
+		("\\[cite:@[A-Za-z]+:\\([0-9]+\\]\\)" . ((lambda (tag)
+							   (svg-tag-make tag
+									 :end -1
+									 :crop-left t))))
+
+          
+		;; Active date (without day name, with or without time)
+		(,(format "\\(<%s>\\)" date-re) .
+		 ((lambda (tag)
+		    (svg-tag-make tag :beg 1 :end -1 :margin 0))))
+		(,(format "\\(<%s *\\)%s>" date-re time-re) .
+		 ((lambda (tag)
+		    (svg-tag-make tag :beg 1 :inverse nil :crop-right t :margin 0))))
+		(,(format "<%s *\\(%s>\\)" date-re time-re) .
+		 ((lambda (tag)
+		    (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0))))
+
+		;; Inactive date  (without day name, with or without time)
+		(,(format "\\(\\[%s\\]\\)" date-re) .
+		 ((lambda (tag)
+		    (svg-tag-make tag :beg 1 :end -1 :margin 0 :face 'org-date))))
+		(,(format "\\(\\[%s *\\)%s\\]" date-re time-re) .
+		 ((lambda (tag)
+		    (svg-tag-make tag :beg 1 :inverse nil :crop-right t :margin 0 :face 'org-date))))
+		(,(format "\\[%s *\\(%s\\]\\)" date-re time-re) .
+		 ((lambda (tag)
+		    (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0 :face 'org-date))))))
+
+	(svg-tag-mode t)
+
+	;; To do:         TODO DONE  
+	;; Tags:          :TAG1:TAG2:TAG3:
+	;; Priorities:    [#A] [#B] [#C]
+	;; Progress:      [1/3]
+	;;                [42%]
+	;; Active date:   <2021-12-24>
+	;;                <2021-12-24 14:00>
+	;; Inactive date: [2021-12-24]
+	;;                [2021-12-24 14:00]
+	;; Citation:      [cite:@Knuth:1984]
+	)
+    #+end_src
    
 ** All The Icons
 
@@ -419,7 +519,7 @@
 
    [[https://github.com/alhassy/org-special-block-extras][This package]] allows the definition of custom blocks that transform a =#+begin_x= block into something useful after rendering it into the target language such as LaTeX or HTML.
 
-   #+begin_src emacs-lisp
+   #+begin_src emacs-lisp :tangle no
      (use-package org-special-block-extras
        :ensure t
        :after org
@@ -549,19 +649,36 @@
    
 ** Org Links
 
-   Add additional links to be understood by org-mode.
-   
+   Add additional links to be understood by org-mode. 
    
 *** DEVONthink
     This configuration enables clickable links to =x-devonthink-item://= links, which will open in DEVONthink.
 
+    See the documentation here to do it properly: https://orgmode.org/manual/Adding-Hyperlink-Types.html
+    
     #+begin_src emacs-lisp
       (org-add-link-type "x-devonthink-item" 'org-devonthink-item-open)
       (defun org-devonthink-item-open (uid)
 	"Open the given uid, which is a reference to an item in Devonthink"
-	(shell-command (concat "open \"x-devonthink-item:" uid "\"")))
+	(shell-command (concat "ssh " (getenv "HOST_USER") "@" (getenv "HOST_IP") " -n \"open x-devonthink-item:" uid "\"")))
     #+end_src
+   
+** Redirect Browser
+
+   This enables EmIAC to open the Browser of the Host OS with the URL at point.
     
+   #+begin_src emacs-lisp
+     (defun browse-url-emiac-mac-host (url &optional _new-window)
+       "Communicate with the EmIAC host and open the URL in the default 
+	browser on the host.
+	The host OS here is MacOS
+       "
+       (interactive (browse-url-interactive-arg "KDE URL: "))
+       (message "Sending URL to Host OS...")
+       (apply #'start-process "name" "foo" "ssh" (concat (getenv "HOST_USER") "@" (getenv "HOST_IP")) "-n" (list (concat "open " url))))
+     (setq browse-url-browser-function 'browse-url-emiac-mac-host)
+   #+end_src
+
 ** Org Roam
    =org-roam= aids building a second brain. It basically a implementation of the Zettelkasten note-taking strategy. This allows you to see connections between different notes, that you may not have seen before.
 
@@ -740,7 +857,7 @@
     You can set up a global location of the blog like this:
        
     #+begin_src emacs-lisp
-      (setq hugo-base-dir "~/research/export/hugo/dump")
+      (setq org-hugo-base-dir (concat emiac-home-dir "/research/export/hugo/dump"))
     #+end_src
     
 * Deft
