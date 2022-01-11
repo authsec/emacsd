@@ -257,6 +257,8 @@ If the new path's directories does not exist, create them."
 ;; Store new notes at the beginning of the file
 (setq org-reverse-note-order t)
 
+(org-indent-mode 1)
+
 (with-eval-after-load 'org
   (org-babel-do-load-languages
    'org-babel-load-languages

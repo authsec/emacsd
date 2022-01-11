@@ -39,6 +39,20 @@
     (set-face-attribute 'default nil :font "Roboto Mono" :height 120)
   #+end_src
 
+** Setup Smooth Scrolling
+
+   This is taken straight from the [[https://www.emacswiki.org/emacs/SmoothScrolling][EmacsWiki]] and usually works just fine.
+
+   #+begin_src emacs-lisp
+     ;; scroll one line at a time (less "jumpy" than defaults)
+     (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time    
+     (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+     (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+     (setq scroll-step 1) ;; keyboard scroll one line at a time
+   #+end_src
+
+   
+   
 ** Move Backup Files
    Let emacs create backups in a specific directory, mirroring the same folder structure as the original.
 
@@ -60,8 +74,7 @@
 
      (setq make-backup-file-name-function 'my-backup-file-name)
    #+end_src
-   
-   
+      
 ** Visual Line Mode
 
    This mode allows long lines to be wrapped if they are too long to fit the current window. The mode can globally be enabled with =global-visual-line-mode= or =visual-line-mode= respectively:
@@ -189,7 +202,7 @@
 		;; Org tags
 		(":\\([A-Za-z0-9]+\\)" . ((lambda (tag) (svg-tag-make tag))))
 		(":\\([A-Za-z0-9]+[ \-]\\)" . ((lambda (tag) tag)))
-          
+
 		;; Task priority
 		("\\[#[A-Z]\\]" . ( (lambda (tag)
 				      (svg-tag-make tag :face 'org-priority 
@@ -200,7 +213,7 @@
 						    (svg-progress-percent (substring tag 1 -2)))))
 		("\\(\\[[0-9]+/[0-9]+\\]\\)" . ((lambda (tag)
 						  (svg-progress-count (substring tag 1 -1)))))
-          
+
 		;; TODO / DONE
 		("TODO" . ((lambda (tag) (svg-tag-make "TODO" :face 'org-todo :inverse t :margin 0 :scale 1))))
 		("DONE" . ((lambda (tag) (svg-tag-make "DONE" :face 'org-done :margin 0))))
@@ -217,7 +230,7 @@
 									 :end -1
 									 :crop-left t))))
 
-          
+
 		;; Active date (without day name, with or without time)
 		(,(format "\\(<%s>\\)" date-re) .
 		 ((lambda (tag)
@@ -253,7 +266,7 @@
 	;;                [2021-12-24 14:00]
 	;; Citation:      [cite:@Knuth:1984]
 	)
-    #+end_src
+	#+end_src
    
 ** All The Icons
 
@@ -459,6 +472,15 @@
     ;; Store new notes at the beginning of the file
     (setq org-reverse-note-order t)
   #+end_src
+
+  
+** Indentation
+
+   Setup indentation in =org-mode= buffers, so the outline is nicely structured when you read it.
+
+   #+begin_src emacs-lisp
+     (org-indent-mode 1)
+   #+end_src
   
 ** Configure Babel Languages
 
@@ -881,15 +903,27 @@
   *NOTE:* If you are using this on a Mac with Docker Desktop, make sure that you have `Use gRPC FUSE for file sharing` enabled in the `General` category. If you don't do this, =docker= gets stuck and starts to hang while building if you changed the source file inbetween two invocations of the =docker run= command. Restarting the docker engine is the only thing that helps to resolve the issue in that case. Of course this may be a bug that has been fixed by the time you read this too.
 
   Using LaTeX with emiac is easy, as it sits on top of [[https://github.com/authsec/sphinx][authsec/sphinx]], it already inherits all the tools required to build a nice looking LaTeX document.
-    
-  So the compile process here uses =latexmk= directly now.
+
+** Compile LaTeX Document
   
-  #+begin_src emacs-lisp
-    (setq org-latex-pdf-process
-	  (list
-	   "latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -c -bibtex && rm -rf %b.run.xml %b.tex %b.bbl _minted-*"
-	   ))
-  #+end_src
+   So the compile process here uses =latexmk= directly now. Please note that this 
+  
+   #+begin_src emacs-lisp :tangle no
+     (setq org-latex-pdf-process
+	   (list
+	    "latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -c -bibtex && rm -rf %b.run.xml %b.tex %b.bbl _minted-*"
+	    ))
+   #+end_src
+
+   Compile LaTeX file and copy it to the export location for today.
+   
+   #+begin_src emacs-lisp
+ (setq org-latex-pdf-process
+	   (list
+	    "latexmk -interaction=nonstopmode -shell-escape -pdf -f %b.tex && latexmk -c -bibtex && rm -rf %b.run.xml %b.tex %b.bbl _minted-*; mkdir ~/research/export/pdf/$(/usr/bin/date -I)-%b; cp %b.pdf ~/research/export/pdf/$(/usr/bin/date -I)-%b"
+	    ))
+   #+end_src
+
   
 ** Source Code Blocks
    To display nice source code blocks you can use the package =minted= which can be set up like this:
