@@ -127,12 +127,14 @@
    #+end_src
    
    #+begin_src emacs-lisp
- (defun as/open-in-finder ()
-      (interactive)
-      (shell-command
-       (concat "ssh " (getenv "HOST_USER") "@" (getenv "HOST_IP")
-	       " -n \"open -R " (getenv "HOST_RESEARCH_DIR") (s-replace  (format "%s" (getenv "EMIAC_RESEARCH_DIR")) "" (format "%s" buffer-file-name)) "\""
-)))
+     (defun as/open-in-finder ()
+       (interactive)
+       (if (not (getenv "HOST_RESEARCH_DIR"))
+	   (message "[See Docs] The environment variable HOST_RESEARCH_DIR must be set")
+	   (shell-command
+	    (concat "ssh " (getenv "HOST_USER") "@" (getenv "HOST_IP")
+		    " -n \"open -R " (getenv "HOST_RESEARCH_DIR") (s-replace  (format "%s" (getenv "EMIAC_RESEARCH_DIR")) "" (format "%s" buffer-file-name)) "\""
+     ))))
    #+end_src
 
    
